@@ -21,6 +21,7 @@
 ******************************************************************************/
 
 package org.pentaho.di.trans.steps.solrinput;
+
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
@@ -59,7 +60,7 @@ import org.pentaho.metastore.api.IMetaStore;
 import org.w3c.dom.Node;
 
 @SuppressWarnings("deprecation")
-@Step(id = "OmnitureInputStep", i18nPackageName = "org.pentaho.di.trans.steps.solrinput", name = "SolrInput.TypeLongDesc.OmnitureInput", description = "SolrInput.TypeTooltipDesc.OmnitureInput", categoryDescription = "i18n:org.pentaho.di.trans.step:BaseStep.Category.Input", image = "SolrInput.svg", documentationUrl = "http://wiki.pentaho.com")
+@Step(id = "SolrInputStep", i18nPackageName = "org.pentaho.di.trans.steps.solrinput", name = "SolrInput.TypeLongDesc.SolrInput", description = "SolrInput.TypeTooltipDesc.SolrInput", categoryDescription = "i18n:org.pentaho.di.trans.step:BaseStep.Category.Input", image = "SolrInput.svg", documentationUrl = "http://wiki.pentaho.com")
 public class SolrInputMeta extends BaseStepMeta implements StepMetaInterface {
 
   private static Class<?> PKG = SolrInputMeta.class; // for i18n purposes
@@ -67,15 +68,14 @@ public class SolrInputMeta extends BaseStepMeta implements StepMetaInterface {
   public static final String FIELD_TYPE_ELEMENT = "Element";
   public static final String FIELD_TYPE_METRIC = "Metric";
   
-  private String userName;
-  private String secret;
-  private String reportSuiteId;
-  private String startDate;
-  private String endDate;
-  private String dateGranularity;
-  private String elements;
-  private String metrics;
-  private String segments;
+  private String URL;
+  private String q;
+  private String fl;
+  private String fq;
+  private String rows;
+  private String facetField;
+  private String facetQuery;
+  
   /** The fields to return... */
   private SolrInputField[] inputFields;
   private int nrFields;
@@ -99,76 +99,60 @@ public class SolrInputMeta extends BaseStepMeta implements StepMetaInterface {
     this.inputFields = inputFields;
   }
 
-  public String getUserName() {
-	return userName;
+  public String getURL() {
+	return URL;
   }
 
-  public void setUserName( String userName ) {
-    this.userName = userName;
+  public void setURL( String URL ) {
+    this.URL = URL;
   }
   
-  public String getSecret() {
-	return secret;
+  public String getQ() {
+	return q;
   }
 
-  public void setSecret( String secret ) {
-    this.secret = secret;
+  public void setQ( String q ) {
+    this.q = q;
   }
   
-  public String getReportSuiteId() {
-	return reportSuiteId;
+  public String getFq() {
+	return fq;
   }
 
-  public void setReportSuiteId( String reportSuiteId ) {
-    this.reportSuiteId = reportSuiteId;
-  }
-
-  public String getSegments() {
-    return segments;
-  }
-
-  public void setSegments( String segments ) {
-    this.segments = segments;
-  }
-
-  public String getElements() {
-    return elements;
-  }
-
-  public void setElements( String elements ) {
-    this.elements = elements;
-  }
-
-  public String getMetrics() {
-    return metrics;
-  }
-
-  public void setMetrics( String metrics ) {
-    this.metrics = metrics;
-  }
-
-  public String getStartDate() {
-    return startDate;
-  }
-
-  public void setStartDate( String startDate ) {
-    this.startDate = startDate;
-  }
-
-  public String getEndDate() {
-    return endDate;
-  }
-
-  public void setEndDate( String endDate ) {
-    this.endDate = endDate;
+  public void setFq( String fq ) {
+    this.fq = fq;
   }
   
-  public String getDateGranularity() {
-    return dateGranularity;
+  public String getFl() {
+	return fl;
   }
 
-  public void setDateGranularity( String dateGranularity ) {
-    this.dateGranularity = dateGranularity;
+  public void setFl( String fl ) {
+    this.fl = fl;
+  }
+  
+  public String getRows() {
+	return rows;
+  }
+
+  public void setRows( String rows ) {
+    this.rows = rows;
+  }
+  
+  public String getFacetField() {
+	return facetField;
+  }
+
+  public void setFacetField( String facetField ) {
+    this.facetField = facetField;
+  }
+  
+  public String getFacetQuery() {
+	return facetQuery;
+  }
+
+  public void setFacetQuery( String facetQuery ) {
+    this.facetQuery = facetQuery;
   }
   
   public void allocate( int nrfields ) {
@@ -181,15 +165,13 @@ public class SolrInputMeta extends BaseStepMeta implements StepMetaInterface {
 
   // set sensible defaults for a new step
   public void setDefault() {
-    userName = "username:Company";
-    secret = ""; //"123abc456def789ghi012jkl345";
-    reportSuiteId = "Your Report Suite Id";
-    elements = "page";
-    metrics = "visits";
-    startDate = new SimpleDateFormat( "yyyy-MM-dd" ).format( new Date() );
-    endDate = new String( startDate );
-    dateGranularity = "DAY";
-    segments = "";
+    URL = "";
+    q = "";
+    fl = "";
+    fq = "";
+    rows = "";
+    facetField = "";
+    facetQuery = "";
     allocate( 0 );
   }
 
@@ -243,15 +225,13 @@ public class SolrInputMeta extends BaseStepMeta implements StepMetaInterface {
   public String getXML() throws KettleValueException {
 
     StringBuilder retval = new StringBuilder( 800 );
-    retval.append( "    " ).append( XMLHandler.addTagValue( "userName", userName ) );
-    retval.append( "    " ).append( XMLHandler.addTagValue( "secret", secret ) );
-    retval.append( "    " ).append( XMLHandler.addTagValue( "reportSuiteId", reportSuiteId ) );
-    retval.append( "    " ).append( XMLHandler.addTagValue( "startDate", startDate ) );
-    retval.append( "    " ).append( XMLHandler.addTagValue( "endDate", endDate ) );
-    retval.append( "    " ).append( XMLHandler.addTagValue( "dateGranularity", dateGranularity ) );
-    retval.append( "    " ).append( XMLHandler.addTagValue( "elements", elements ) );
-    retval.append( "    " ).append( XMLHandler.addTagValue( "metrics", metrics ) );
-    retval.append( "    " ).append( XMLHandler.addTagValue( "segments", segments ) );
+    retval.append( "    " ).append( XMLHandler.addTagValue( "URL", URL ) );
+    retval.append( "    " ).append( XMLHandler.addTagValue( "q", q ) );
+    retval.append( "    " ).append( XMLHandler.addTagValue( "fq", fq ) );
+    retval.append( "    " ).append( XMLHandler.addTagValue( "fl", fl ) );
+    retval.append( "    " ).append( XMLHandler.addTagValue( "rows", rows ) );
+    retval.append( "    " ).append( XMLHandler.addTagValue( "facetField", facetField ) );
+    retval.append( "    " ).append( XMLHandler.addTagValue( "facetQuery", facetQuery ) );
     retval.append( "    <fields>" + Const.CR );
     for ( int i = 0; i < inputFields.length; i++ ) {
       SolrInputField field = inputFields[i];
@@ -263,18 +243,13 @@ public class SolrInputMeta extends BaseStepMeta implements StepMetaInterface {
 
   private void readData( Node stepnode ) throws KettleXMLException {
 	    try {
-	      userName = XMLHandler.getTagValue( stepnode, "userName" );
-	      secret = XMLHandler.getTagValue( stepnode, "secret" );
-	      if ( secret != null && secret.startsWith( "Encrypted" ) ) {
-	    	  secret = Encr.decryptPassword( secret.replace( "Encrypted", "" ).replace( " ", "" ) );
-	      }
-	      reportSuiteId = XMLHandler.getTagValue( stepnode, "reportSuiteId" );
-	      startDate = XMLHandler.getTagValue( stepnode, "startDate" );
-	      endDate = XMLHandler.getTagValue( stepnode, "endDate" );
-	      dateGranularity = XMLHandler.getTagValue( stepnode, "dateGranularity" );
-	      elements = XMLHandler.getTagValue( stepnode, "elements" );
-	      metrics = XMLHandler.getTagValue( stepnode, "metrics" );
-	      segments = XMLHandler.getTagValue( stepnode, "segments" );
+	      URL = XMLHandler.getTagValue( stepnode, "URL" );
+	      q = XMLHandler.getTagValue( stepnode, "q" );
+	      fq = XMLHandler.getTagValue( stepnode, "fq" );
+	      fl = XMLHandler.getTagValue( stepnode, "fl" );
+	      rows = XMLHandler.getTagValue( stepnode, "rows" );
+	      facetField = XMLHandler.getTagValue( stepnode, "facetField" );
+	      facetQuery = XMLHandler.getTagValue( stepnode, "facetQuery" );
 
 	      Node fields = XMLHandler.getSubNode( stepnode, "fields" );
 	      int nrFields = XMLHandler.countNodes( fields, "field" );
@@ -294,18 +269,13 @@ public class SolrInputMeta extends BaseStepMeta implements StepMetaInterface {
   
   public void readRep( Repository rep, IMetaStore metaStore, ObjectId id_step, List<DatabaseMeta> databases ) throws KettleException {
 	    try {
-	      userName = rep.getStepAttributeString( id_step, "userName" );
-	      secret = rep.getStepAttributeString( id_step, "secret" );
-	      if ( secret != null && secret.startsWith( "Encrypted" ) ) {
-	    	  secret = Encr.decryptPassword( secret.replace( "Encrypted", "" ).replace( " ", "" ) );
-	      }
-	      reportSuiteId = rep.getStepAttributeString( id_step, "reportSuiteId" );
-	      startDate = rep.getStepAttributeString( id_step, "startDate" );
-	      endDate = rep.getStepAttributeString( id_step, "endDate" );
-	      dateGranularity = rep.getStepAttributeString( id_step,  "dateGranularity" );
-	      elements = rep.getStepAttributeString( id_step, "elements" );
-	      metrics = rep.getStepAttributeString( id_step, "metrics" );
-	      segments = rep.getStepAttributeString( id_step, "segments" );
+	      URL = rep.getStepAttributeString( id_step, "URL" );
+	      q = rep.getStepAttributeString( id_step, "q" );
+	      fq = rep.getStepAttributeString( id_step, "fq" );
+	      fl = rep.getStepAttributeString( id_step, "fl" );
+	      rows = rep.getStepAttributeString( id_step,  "rows" );
+	      facetField = rep.getStepAttributeString( id_step, "facetField" );
+	      facetQuery = rep.getStepAttributeString( id_step, "facetQuery" );
 
 	      int nrFields = rep.countNrStepAttributes( id_step, "field_name" );
 
@@ -334,16 +304,14 @@ public class SolrInputMeta extends BaseStepMeta implements StepMetaInterface {
 
 	  public void saveRep( Repository rep, IMetaStore metaStore, ObjectId id_transformation, ObjectId id_step ) throws KettleException {
 	    try {
-	      rep.saveStepAttribute( id_transformation, id_step, "userName", userName );
-	      rep.saveStepAttribute( id_transformation, id_step, "secret", Encr.encryptPasswordIfNotUsingVariables( secret ) );
-	      rep.saveStepAttribute( id_transformation, id_step, "reportSuiteId", reportSuiteId );
-	      rep.saveStepAttribute( id_transformation, id_step, "startDate", startDate );
-	      rep.saveStepAttribute( id_transformation, id_step, "endDate", endDate );
-	      rep.saveStepAttribute( id_transformation, id_step, "dateGranularity", dateGranularity );
-	      rep.saveStepAttribute( id_transformation, id_step, "elements", elements );
-	      rep.saveStepAttribute( id_transformation, id_step, "metrics", metrics );
-	      rep.saveStepAttribute( id_transformation, id_step, "segments", segments );
-
+	      rep.saveStepAttribute( id_transformation, id_step, "URL", URL );
+	      rep.saveStepAttribute( id_transformation, id_step, "q", q );
+	      rep.saveStepAttribute( id_transformation, id_step, "fq", fq );
+	      rep.saveStepAttribute( id_transformation, id_step, "fl", fl );
+	      rep.saveStepAttribute( id_transformation, id_step, "rows", rows );
+	      rep.saveStepAttribute( id_transformation, id_step, "facetField", facetField );
+	      rep.saveStepAttribute( id_transformation, id_step, "facetQuery", facetQuery );
+	      
 	      for ( int i = 0; i < inputFields.length; i++ ) {
 	        SolrInputField field = inputFields[i];
 	        rep.saveStepAttribute( id_transformation, id_step, i, "field_name", field.getName() );
@@ -379,42 +347,18 @@ public class SolrInputMeta extends BaseStepMeta implements StepMetaInterface {
 	    }
 	    remarks.add( cr );
 
-	    // check userName
-	    if ( Const.isEmpty( userName ) ) {
+	    // check URL
+	    if ( Const.isEmpty( URL ) ) {
 	      cr =
 	        new CheckResult( CheckResult.TYPE_RESULT_ERROR, BaseMessages.getString(
-	          PKG, "SolrInputMeta.CheckResult.NoUsername" ), stepMeta );
+	          PKG, "SolrInputMeta.CheckResult.NoURL" ), stepMeta );
 	    } else {
 	      cr =
 	        new CheckResult( CheckResult.TYPE_RESULT_OK, BaseMessages.getString(
-	          PKG, "SolrInputMeta.CheckResult.UsernameOk" ), stepMeta );
+	          PKG, "SolrInputMeta.CheckResult.URLOk" ), stepMeta );
 	    }
 	    remarks.add( cr );
 	    
-	    // check secret
-	    if ( Const.isEmpty( secret ) ) {
-	      cr =
-	        new CheckResult( CheckResult.TYPE_RESULT_ERROR, BaseMessages.getString(
-	          PKG, "SolrInputMeta.CheckResult.NoSecret" ), stepMeta );
-	    } else {
-	      cr =
-	        new CheckResult( CheckResult.TYPE_RESULT_OK, BaseMessages.getString(
-	          PKG, "SolrInputMeta.CheckResult.SecretOk" ), stepMeta );
-	    }
-	    remarks.add( cr );
-	    
-	    // check reportSuiteId
-	    if ( Const.isEmpty( reportSuiteId ) ) {
-	      cr =
-	        new CheckResult( CheckResult.TYPE_RESULT_ERROR, BaseMessages.getString(
-	          PKG, "SolrInputMeta.CheckResult.NoReportSuiteId" ), stepMeta );
-	    } else {
-	      cr =
-	        new CheckResult( CheckResult.TYPE_RESULT_OK, BaseMessages.getString(
-	          PKG, "SolrInputMeta.CheckResult.ReportSuiteIdOk" ), stepMeta );
-	    }
-	    remarks.add( cr );
-
 	    // check return fields
 	    if ( inputFields.length == 0 ) {
 	      cr =

@@ -30,7 +30,7 @@ import org.pentaho.di.i18n.BaseMessages;
 import org.w3c.dom.Node;
 
 /**
- * Describes an OmnitureStep field
+ * Describes an SolrStep field
  *
  * @author Steven Mortimer
  * @since 2016-02-12

@@ -1,4 +1,4 @@
-/*! ******************************************************************************
+/* ******************************************************************************
 *
 * Pentaho Data Integration
 *
@@ -26,9 +26,15 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.adobe.analytics.client.*;
-import com.adobe.analytics.client.domain.*;
-import com.adobe.analytics.client.methods.*;
+import org.apache.http.client.HttpClient;
+import org.apache.solr.client.*;
+import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.SolrServer;
+import org.apache.solr.client.solrj.impl.HttpSolrServer;
+import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.client.solrj.response.SolrPingResponse;
+import org.apache.solr.common.SolrDocumentList;
 import org.eclipse.swt.SWT;
 import org.pentaho.di.ui.core.dialog.EnterNumberDialog;
 import org.pentaho.di.ui.core.dialog.EnterTextDialog;
@@ -95,46 +101,21 @@ public class SolrInputDialog extends BaseStepDialog implements StepDialogInterfa
   
   private Group wConnectGroup;
   private FormData fdConnectGroup;
+  private Group wQueryGroup;
+  private FormData fdQueryGroup;
   
-  private Group wReportGroup;
-  private FormData fdReportGroup;
+  private LabelTextVar wURL;
+  private FormData fdURL;
+  private Label wlQ, wlFq, wlFl, wlRows, wlFacetField, wlFacetQuery;
+  private TextVar wQ, wFq, wFl, wRows, wFacetField, wFacetQuery;
   
-  private LabelTextVar wUserName, wSecret;
-  private FormData fdUserName, fdSecret;
-  
-  private ComboVar wReportSuiteId;
-  private Label wlReportSuiteId;
-  private FormData fdlReportSuiteId, fdReportSuiteId;
-  private boolean gotReportSuiteIds = false;
-  private boolean getReportSuiteIdsListError = false; /* True if error getting report suite id list */
+  private Link wQReference, wFqReference, wFlReference, wRowsReference, wFacetFieldReference, wFacetQueryReference;
   
   private Button wTest;
   private FormData fdTest;
 
   private TableView wFields;
-
-  private Label wlQuStartDate;
-  private TextVar wQuStartDate;
-
-  private Label wlQuEndDate;
-  private TextVar wQuEndDate;
   
-  private Label wlDateGranularity;
-  private CCombo wQuDateGranularity;
-
-  private Label wlQuElements;
-  private TextVar wQuElements;
-
-  private Label wlQuMetrics;
-  private TextVar wQuMetrics;
-  
-  private Label wlQuSegments;
-  private TextVar wQuSegments;
-
-  private Link wQuElementsReference;
-  private Link wQuMetricsReference;
-  private Link wQuSegmentsReference;
-
   private int middle;
   private int margin;
 
@@ -142,14 +123,18 @@ public class SolrInputDialog extends BaseStepDialog implements StepDialogInterfa
 
   private ModifyListener lsMod;
   
-  public static final String[] dateGranularityOptions = { "", "SECONDS", "HOUR", "DAY", "WEEK", "MONTH", "QUARTER", "YEAR" };
-
-  static final String REFERENCE_METRICS_URI =
+  static final String REFERENCE_Q_URI =
     "https://marketing.adobe.com/developer/documentation/analytics-reporting-1-4/metrics";
-  static final String REFERENCE_ELEMENTS_URI =
+  static final String REFERENCE_FQ_URI =
     "https://marketing.adobe.com/developer/documentation/analytics-reporting-1-4/elements";
-  static final String REFERENCE_SEGMENTS_URI =
+  static final String REFERENCE_FL_URI =
     "https://marketing.adobe.com/resources/help/en_US/analytics/segment";
+  static final String REFERENCE_ROWS_URI =
+    "https://marketing.adobe.com/developer/documentation/analytics-reporting-1-4/elements";
+  static final String REFERENCE_FACETFIELD_URI =
+    "https://marketing.adobe.com/resources/help/en_US/analytics/segment";
+  static final String REFERENCE_FACETQUERY_URI =
+    "https://marketing.adobe.com/developer/documentation/analytics-reporting-1-4/elements";
   
   // constructor
   public SolrInputDialog( Shell parent, Object in, TransMeta transMeta, String sname ) {
@@ -226,7 +211,7 @@ public String open() {
     wSetupTab.setControl( wSetupComp );
     
     /*************************************************
-     * // OMNITURE CONNECTION GROUP
+     * // SOLR CONNECTION GROUP
      *************************************************/
     wConnectGroup = new Group( wSetupComp, SWT.SHADOW_ETCHED_IN );
     wConnectGroup.setText( BaseMessages.getString( PKG, "SolrInputDialog.ConnectGroup.Label" ) );
@@ -236,77 +221,28 @@ public String open() {
     wConnectGroup.setLayout( fconnLayout );
     props.setLook( wConnectGroup );
 
-    // UserName line
-    wUserName = new LabelTextVar( transMeta, wConnectGroup,
-      BaseMessages.getString( PKG, "SolrInputDialog.User.Label" ),
-      BaseMessages.getString( PKG, "SolrInputDialog.User.Tooltip" ) );
-    props.setLook( wUserName );
-    wUserName.addModifyListener( lsMod );
-    fdUserName = new FormData();
-    fdUserName.left = new FormAttachment( 0, 0 );
-    fdUserName.top = new FormAttachment( 0, margin );
-    fdUserName.right = new FormAttachment( 100, 0 );
-    wUserName.setLayoutData( fdUserName );
-
-    // Secret line
-    wSecret = new LabelTextVar( transMeta, wConnectGroup,
-      BaseMessages.getString( PKG, "SolrInputDialog.Secret.Label" ),
-      BaseMessages.getString( PKG, "SolrInputDialog.Secret.Tooltip" ), true );
-    props.setLook( wSecret );
-    wSecret.addModifyListener( lsMod );
-    fdSecret = new FormData();
-    fdSecret.left = new FormAttachment( 0, 0 );
-    fdSecret.top = new FormAttachment( wUserName, margin );
-    fdSecret.right = new FormAttachment( 100, 0 );
-    wSecret.setLayoutData( fdSecret );
+    // URL line
+    wURL = new LabelTextVar( transMeta, wConnectGroup,
+      BaseMessages.getString( PKG, "SolrInputDialog.URL.Label" ),
+      BaseMessages.getString( PKG, "SolrInputDialog.URL.Tooltip" ) );
+    props.setLook( wURL );
+    wURL.addModifyListener( lsMod );
+    fdURL = new FormData();
+    fdURL.left = new FormAttachment( 0, 0 );
+    fdURL.top = new FormAttachment( 0, margin );
+    fdURL.right = new FormAttachment( 100, 0 );
+    wURL.setLayoutData( fdURL );
     
-    // ReportSuiteId line
-    wlReportSuiteId = new Label( wConnectGroup, SWT.RIGHT );
-    wlReportSuiteId.setText( BaseMessages.getString( PKG, "SolrInputDialog.ReportSuiteId.Label" ) );
-    props.setLook( wlReportSuiteId );
-    fdlReportSuiteId = new FormData();
-    fdlReportSuiteId.top = new FormAttachment( wSecret, margin );
-    fdlReportSuiteId.left = new FormAttachment( 0, 0 );
-    fdlReportSuiteId.right = new FormAttachment( middle, -margin );
-    wlReportSuiteId.setLayoutData( fdlReportSuiteId );
-    wReportSuiteId = new ComboVar( transMeta, wConnectGroup, SWT.BORDER | SWT.READ_ONLY );
-    wReportSuiteId.setEditable( true );
-    props.setLook( wReportSuiteId );
-    wReportSuiteId.addModifyListener( lsMod );
-    fdReportSuiteId = new FormData();
-    fdReportSuiteId.top = new FormAttachment( wSecret, margin );
-    fdReportSuiteId.left = new FormAttachment( middle, 0 );
-    fdReportSuiteId.right = new FormAttachment( 100, 0 );
-    wReportSuiteId.setLayoutData( fdReportSuiteId );
-    wReportSuiteId.addFocusListener( new FocusListener() {
-      public void focusLost( org.eclipse.swt.events.FocusEvent e ) {
-    	  getReportSuiteIdsListError = false;
-      }
-      public void focusGained( org.eclipse.swt.events.FocusEvent e ) {
-        // check if the login credentials passed and not just had error
-        if ( Const.isEmpty( wUserName.getText() ) || Const.isEmpty( wSecret.getText() )
-          || ( getReportSuiteIdsListError ) ) {
-          return;
-        }
-        Cursor busy = new Cursor( shell.getDisplay(), SWT.CURSOR_WAIT );
-        shell.setCursor( busy );
-        getReportSuiteIdsList();
-        shell.setCursor( null );
-        busy.dispose();
-      }
-    } );
-    
-    // Test Omniture connection button
+    // Test Solr connection button
     wTest = new Button( wConnectGroup, SWT.PUSH );
     wTest.setText( BaseMessages.getString( PKG, "SolrInputDialog.TestConnection.Label" ) );
     props.setLook( wTest );
     fdTest = new FormData();
     wTest.setToolTipText( BaseMessages.getString( PKG, "SolrInputDialog.TestConnection.Tooltip" ) );
     // fdTest.left = new FormAttachment(middle, 0);
-    fdTest.top = new FormAttachment( wReportSuiteId, margin );
+    fdTest.top = new FormAttachment( wURL, margin );
     fdTest.right = new FormAttachment( 100, 0 );
     wTest.setLayoutData( fdTest );
-    
     wTest.addListener( SWT.Selection, new Listener() {
         @Override
         public void handleEvent( Event e ) {
@@ -326,183 +262,219 @@ public String open() {
     wConnectGroup.setLayoutData( fdConnectGroup );
 
     /*************************************************
-     * // OMNITURE REPORT DEFINITION
+     * // SOLR QUERY DEFINITION
      *************************************************/
     
-    wReportGroup = new Group( wSetupComp, SWT.SHADOW_ETCHED_IN );
-    wReportGroup.setText( BaseMessages.getString( PKG, "SolrInputDialog.ReportGroup.Label" ) );
-    FormLayout freportLayout = new FormLayout();
-    freportLayout.marginWidth = 3;
-    freportLayout.marginHeight = 3;
-    wReportGroup.setLayout( freportLayout );
-    props.setLook( wReportGroup );
-
-    // Report start date
-    wlQuStartDate = new Label( wReportGroup, SWT.RIGHT );
-    wlQuStartDate.setText( BaseMessages.getString( PKG, "SolrInputDialog.Report.StartDate.Label" ) );
-    props.setLook( wlQuStartDate );
-    FormData fdlQuStartDate = new FormData();
-    fdlQuStartDate.top = new FormAttachment( wConnectGroup, 2 * margin );
-    fdlQuStartDate.left = new FormAttachment( 0, 0 );
-    fdlQuStartDate.right = new FormAttachment( middle, -margin );
-    wlQuStartDate.setLayoutData( fdlQuStartDate );
-    
-    wQuStartDate = new TextVar( transMeta, wReportGroup, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
-    wQuStartDate.addModifyListener( lsMod );
-    wQuStartDate.setToolTipText( BaseMessages.getString( PKG, "SolrInputDialog.Report.StartDate.Tooltip" ) );
-    props.setLook( wQuStartDate );
-    FormData fdQuStartDate = new FormData();
-    fdlQuStartDate.top = new FormAttachment( wConnectGroup, 2 * margin );
-    fdQuStartDate.left = new FormAttachment( middle, 0 );
-    fdQuStartDate.right = new FormAttachment( 100, 0 );
-    wQuStartDate.setLayoutData( fdQuStartDate );
-
-    // Report end date
-    wlQuEndDate = new Label( wReportGroup, SWT.RIGHT );
-    wlQuEndDate.setText( BaseMessages.getString( PKG, "SolrInputDialog.Report.EndDate.Label" ) );
-    props.setLook( wlQuEndDate );
-    FormData fdlQuEndDate = new FormData();
-    fdlQuEndDate.top = new FormAttachment( wQuStartDate, margin );
-    fdlQuEndDate.left = new FormAttachment( 0, 0 );
-    fdlQuEndDate.right = new FormAttachment( middle, -margin );
-    wlQuEndDate.setLayoutData( fdlQuEndDate );
-    wQuEndDate = new TextVar( transMeta, wReportGroup, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
-    wQuEndDate.addModifyListener( lsMod );
-    wQuEndDate.setToolTipText( BaseMessages.getString( PKG, "SolrInputDialog.Report.EndDate.Tooltip" ) );
-    props.setLook( wQuEndDate );
-    FormData fdQuEndDate = new FormData();
-    fdQuEndDate.top = new FormAttachment( wQuStartDate, margin );
-    fdQuEndDate.left = new FormAttachment( middle, 0 );
-    fdQuEndDate.right = new FormAttachment( 100, 0 );
-    wQuEndDate.setLayoutData( fdQuEndDate );
-    
-    // Report date granularity
-    wlDateGranularity = new Label( wReportGroup, SWT.RIGHT );
-    wlDateGranularity.setText( BaseMessages.getString( PKG, "SolrInputDialog.DateGranularity.Label" ) );
-    props.setLook( wlDateGranularity );
-    FormData fdlDateGranularity = new FormData();
-    fdlDateGranularity.top = new FormAttachment( wQuEndDate, margin );
-    fdlDateGranularity.left = new FormAttachment( 0, 0 );
-    fdlDateGranularity.right = new FormAttachment( middle, -margin );
-    wlDateGranularity.setLayoutData( fdlDateGranularity );
-    wQuDateGranularity = new CCombo( wReportGroup, SWT.BORDER | SWT.READ_ONLY );
-    props.setLook( wQuDateGranularity );
-    wQuDateGranularity.addModifyListener( lsMod );
-    FormData fdDateGranularity = new FormData();
-    fdDateGranularity.top = new FormAttachment( wQuEndDate, margin );
-    fdDateGranularity.left = new FormAttachment( middle, 0 );
-    fdDateGranularity.right = new FormAttachment( 100, 0 );
-    wQuDateGranularity.setLayoutData( fdDateGranularity );
-    wQuDateGranularity.setItems( dateGranularityOptions );
-
-    // Report elements
-    wlQuElements = new Label( wReportGroup, SWT.RIGHT );
-    wlQuElements.setText( BaseMessages.getString( PKG, "SolrInputDialog.Report.Elements.Label" ) );
-    props.setLook( wlQuElements );
-    FormData fdlQuElements = new FormData();
-    fdlQuElements.top = new FormAttachment( wQuDateGranularity, margin );
-    fdlQuElements.left = new FormAttachment( 0, 0 );
-    fdlQuElements.right = new FormAttachment( middle, -margin );
-    wlQuElements.setLayoutData( fdlQuElements );
-    wQuElements = new TextVar( transMeta, wReportGroup, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
-    wQuElements.addModifyListener( lsMod );
-    wQuElements.setToolTipText( BaseMessages.getString( PKG, "SolrInputDialog.Report.Elements.Tooltip" ) );
-    props.setLook( wQuElements );
-    wQuElementsReference = new Link( wReportGroup, SWT.SINGLE );
-    wQuElementsReference.setText( BaseMessages.getString( PKG, "SolrInputDialog.Report.Reference.Label" ) );
-    props.setLook( wQuElementsReference );
-    wQuElementsReference.addListener( SWT.Selection, new Listener() {
+    // q line
+    wlQ = new Label( wQueryGroup, SWT.RIGHT );
+    wlQ.setText( BaseMessages.getString( PKG, "SolrInputDialog.Query.Q.Label" ) );
+    props.setLook( wlQ );
+    FormData fdlQuQ = new FormData();
+    fdlQuQ.top = new FormAttachment( wConnectGroup, 2 * margin );
+    fdlQuQ.left = new FormAttachment( 0, 0 );
+    fdlQuQ.right = new FormAttachment( middle, -margin );
+    wlQ.setLayoutData( fdlQuQ );
+    wQ = new TextVar( transMeta, wQueryGroup, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
+    wQ.addModifyListener( lsMod );
+    wQ.setToolTipText( BaseMessages.getString( PKG, "SolrInputDialog.Query.Q.Tooltip" ) );
+    props.setLook( wQ );
+    wQReference = new Link( wQueryGroup, SWT.SINGLE );
+    wQReference.setText( BaseMessages.getString( PKG, "SolrInputDialog.Query.Reference.Label" ) );
+    props.setLook( wQReference );
+    wQReference.addListener( SWT.Selection, new Listener() {
       @Override
       public void handleEvent( Event ev ) {
-        BareBonesBrowserLaunch.openURL( REFERENCE_ELEMENTS_URI );
+        BareBonesBrowserLaunch.openURL( REFERENCE_Q_URI );
       }
     } );
-    wQuElementsReference.pack( true );
-    FormData fdQuElements = new FormData();
-    fdQuElements.top = new FormAttachment( wQuDateGranularity, margin );
-    fdQuElements.left = new FormAttachment( middle, 0 );
-    fdQuElements.right = new FormAttachment( 100, -wQuElementsReference.getBounds().width - margin );
-    wQuElements.setLayoutData( fdQuElements );
-    FormData fdQuElementsReference = new FormData();
-    fdQuElementsReference.top = new FormAttachment( wQuDateGranularity, margin );
-    fdQuElementsReference.left = new FormAttachment( wQuElements, 0 );
-    fdQuElementsReference.right = new FormAttachment( 100, 0 );
-    wQuElementsReference.setLayoutData( fdQuElementsReference );
-
-    // Report metrics
-    wlQuMetrics = new Label( wReportGroup, SWT.RIGHT );
-    wlQuMetrics.setText( BaseMessages.getString( PKG, "SolrInputDialog.Report.Metrics.Label" ) );
-    props.setLook( wlQuMetrics );
-    FormData fdlQuMetrics = new FormData();
-    fdlQuMetrics.top = new FormAttachment( wQuElements, margin );
-    fdlQuMetrics.left = new FormAttachment( 0, 0 );
-    fdlQuMetrics.right = new FormAttachment( middle, -margin );
-    wlQuMetrics.setLayoutData( fdlQuMetrics );
-    wQuMetrics = new TextVar( transMeta, wReportGroup, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
-    wQuMetrics.addModifyListener( lsMod );
-    wQuMetrics.setToolTipText( BaseMessages.getString( PKG, "SolrInputDialog.Report.Metrics.Tooltip" ) );
-    props.setLook( wQuMetrics );
-    wQuMetricsReference = new Link( wReportGroup, SWT.SINGLE );
-    wQuMetricsReference.setText( BaseMessages.getString( PKG, "SolrInputDialog.Report.Reference.Label" ) );
-    props.setLook( wQuMetricsReference );
-    wQuMetricsReference.addListener( SWT.Selection, new Listener() {
-      @Override
-      public void handleEvent( Event ev ) {
-        BareBonesBrowserLaunch.openURL( REFERENCE_METRICS_URI );
-      }
-    } );
-    wQuMetricsReference.pack( true );
-    FormData fdQuMetrics = new FormData();
-    fdQuMetrics.top = new FormAttachment( wQuElements, margin );
-    fdQuMetrics.left = new FormAttachment( middle, 0 );
-    fdQuMetrics.right = new FormAttachment( 100, -wQuMetricsReference.getBounds().width - margin );
-    wQuMetrics.setLayoutData( fdQuMetrics );
-
-    FormData fdQuMetricsReference = new FormData();
-    fdQuMetricsReference.top = new FormAttachment( wQuElements, margin );
-    fdQuMetricsReference.left = new FormAttachment( wQuMetrics, 0 );
-    fdQuMetricsReference.right = new FormAttachment( 100, 0 );
-    wQuMetricsReference.setLayoutData( fdQuMetricsReference );
-
-    // Report segments
-    wlQuSegments = new Label( wReportGroup, SWT.RIGHT );
-    wlQuSegments.setText( BaseMessages.getString( PKG, "SolrInputDialog.Report.Segments.Label" ) );
-    props.setLook( wlQuSegments );
-    FormData fdlQuSegments = new FormData();
-    fdlQuSegments.top = new FormAttachment( wQuMetrics, margin );
-    fdlQuSegments.left = new FormAttachment( 0, 0 );
-    fdlQuSegments.right = new FormAttachment( middle, -margin );
-    wlQuSegments.setLayoutData( fdlQuSegments );
-    wQuSegments = new TextVar( transMeta, wReportGroup, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
-    wQuSegments.addModifyListener( lsMod );
-    wQuSegments.setToolTipText( BaseMessages.getString( PKG, "SolrInputDialog.Report.Segments.Tooltip" ) );
-    props.setLook( wQuSegments );
-    wQuSegmentsReference = new Link( wReportGroup, SWT.SINGLE );
-    wQuSegmentsReference.setText( BaseMessages.getString( PKG, "SolrInputDialog.Report.Reference.Label" ) );
-    props.setLook( wQuSegmentsReference );
-    wQuSegmentsReference.addListener( SWT.Selection, new Listener() {
-      @Override
-      public void handleEvent( Event ev ) {
-        BareBonesBrowserLaunch.openURL( REFERENCE_SEGMENTS_URI );
-      }
-    } );
-    wQuSegmentsReference.pack( true );
-    FormData fdQuSegments = new FormData();
-    fdQuSegments.top = new FormAttachment( wQuMetrics, margin );
-    fdQuSegments.left = new FormAttachment( middle, 0 );
-    fdQuSegments.right = new FormAttachment( 100, -wQuSegmentsReference.getBounds().width - margin );
-    wQuSegments.setLayoutData( fdQuSegments );
-    FormData fdQuSegmentsReference = new FormData();
-    fdQuSegmentsReference.top = new FormAttachment( wQuMetrics, margin );
-    fdQuSegmentsReference.left = new FormAttachment( wQuSegments, 0 );
-    fdQuSegmentsReference.right = new FormAttachment( 100, 0 );
-    wQuSegmentsReference.setLayoutData( fdQuSegmentsReference );
+    wQReference.pack( true );
+    FormData fdQuQ = new FormData();
+    fdQuQ.top = new FormAttachment( wConnectGroup, 2 * margin );
+    fdQuQ.left = new FormAttachment( middle, 0 );
+    fdQuQ.right = new FormAttachment( 100, -wQReference.getBounds().width - margin );
+    wQ.setLayoutData( fdQuQ );
+    FormData fdQuQReference = new FormData();
+    fdQuQReference.top = new FormAttachment( wConnectGroup, 2 * margin );
+    fdQuQReference.left = new FormAttachment( wQ, 0 );
+    fdQuQReference.right = new FormAttachment( 100, 0 );
+    wQReference.setLayoutData( fdQuQReference );
     
-    fdReportGroup = new FormData();
-    fdReportGroup.left = new FormAttachment( 0, 0 );
-    fdReportGroup.right = new FormAttachment( 100, 0 );
-    fdReportGroup.top = new FormAttachment( wConnectGroup, 2 * margin );
-    wReportGroup.setLayoutData( fdReportGroup );
+    // fq 
+    wlFq = new Label( wQueryGroup, SWT.RIGHT );
+    wlFq.setText( BaseMessages.getString( PKG, "SolrInputDialog.Query.Fq.Label" ) );
+    props.setLook( wlFq );
+    FormData fdlQuFq = new FormData();
+    fdlQuFq.top = new FormAttachment( wQ, margin );
+    fdlQuFq.left = new FormAttachment( 0, 0 );
+    fdlQuFq.right = new FormAttachment( middle, -margin );
+    wlFq.setLayoutData( fdlQuFq );
+    wFq = new TextVar( transMeta, wQueryGroup, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
+    wFq.addModifyListener( lsMod );
+    wFq.setToolTipText( BaseMessages.getString( PKG, "SolrInputDialog.Query.Fq.Tooltip" ) );
+    props.setLook( wFq );
+    wFqReference = new Link( wQueryGroup, SWT.SINGLE );
+    wFqReference.setText( BaseMessages.getString( PKG, "SolrInputDialog.Query.Reference.Label" ) );
+    props.setLook( wFqReference );
+    wFqReference.addListener( SWT.Selection, new Listener() {
+      @Override
+      public void handleEvent( Event ev ) {
+        BareBonesBrowserLaunch.openURL( REFERENCE_FQ_URI );
+      }
+    } );
+    wFqReference.pack( true );
+    FormData fdQuFq = new FormData();
+    fdQuFq.top = new FormAttachment( wFl, margin );
+    fdQuFq.left = new FormAttachment( middle, 0 );
+    fdQuFq.right = new FormAttachment( 100, -wFqReference.getBounds().width - margin );
+    wFq.setLayoutData( fdQuFq );
+    FormData fdQuFqReference = new FormData();
+    fdQuFqReference.top = new FormAttachment( wFl, margin );
+    fdQuFqReference.left = new FormAttachment( wFq, 0 );
+    fdQuFqReference.right = new FormAttachment( 100, 0 );
+    wFqReference.setLayoutData( fdQuFqReference );
+    
+    // fl
+    wlFl = new Label( wQueryGroup, SWT.RIGHT );
+    wlFl.setText( BaseMessages.getString( PKG, "SolrInputDialog.Query.Fl.Label" ) );
+    props.setLook( wlFl );
+    FormData fdlQuFl = new FormData();
+    fdlQuFl.top = new FormAttachment( wFq, margin );
+    fdlQuFl.left = new FormAttachment( 0, 0 );
+    fdlQuFl.right = new FormAttachment( middle, -margin );
+    wlFl.setLayoutData( fdlQuFl );
+    wFl = new TextVar( transMeta, wQueryGroup, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
+    wFl.addModifyListener( lsMod );
+    wFl.setToolTipText( BaseMessages.getString( PKG, "SolrInputDialog.Query.Fl.Tooltip" ) );
+    props.setLook( wFl );
+    wFlReference = new Link( wQueryGroup, SWT.SINGLE );
+    wFlReference.setText( BaseMessages.getString( PKG, "SolrInputDialog.Query.Reference.Label" ) );
+    props.setLook( wFlReference );
+    wFlReference.addListener( SWT.Selection, new Listener() {
+      @Override
+      public void handleEvent( Event ev ) {
+        BareBonesBrowserLaunch.openURL( REFERENCE_FL_URI );
+      }
+    } );
+    wFlReference.pack( true );
+    FormData fdQuFl = new FormData();
+    fdQuFl.top = new FormAttachment( wFq, margin );
+    fdQuFl.left = new FormAttachment( middle, 0 );
+    fdQuFl.right = new FormAttachment( 100, -wFlReference.getBounds().width - margin );
+    wFl.setLayoutData( fdQuFl );
+    FormData fdQuFlReference = new FormData();
+    fdQuFlReference.top = new FormAttachment( wFq, margin );
+    fdQuFlReference.left = new FormAttachment( wFl, 0 );
+    fdQuFlReference.right = new FormAttachment( 100, 0 );
+    wFlReference.setLayoutData( fdQuFlReference );
+    
+    // rows
+    wlRows = new Label( wQueryGroup, SWT.RIGHT );
+    wlRows.setText( BaseMessages.getString( PKG, "SolrInputDialog.Query.Rows.Label" ) );
+    props.setLook( wlRows );
+    FormData fdlQuRows = new FormData();
+    fdlQuRows.top = new FormAttachment( wFl, margin );
+    fdlQuRows.left = new FormAttachment( 0, 0 );
+    fdlQuRows.right = new FormAttachment( middle, -margin );
+    wlRows.setLayoutData( fdlQuRows );
+    wRows = new TextVar( transMeta, wQueryGroup, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
+    wRows.addModifyListener( lsMod );
+    wRows.setToolTipText( BaseMessages.getString( PKG, "SolrInputDialog.Query.Rows.Tooltip" ) );
+    props.setLook( wRows );
+    wRowsReference = new Link( wQueryGroup, SWT.SINGLE );
+    wRowsReference.setText( BaseMessages.getString( PKG, "SolrInputDialog.Query.Reference.Label" ) );
+    props.setLook( wRowsReference );
+    wRowsReference.addListener( SWT.Selection, new Listener() {
+      @Override
+      public void handleEvent( Event ev ) {
+        BareBonesBrowserLaunch.openURL( REFERENCE_ROWS_URI );
+      }
+    } );
+    wRowsReference.pack( true );
+    FormData fdQuRows = new FormData();
+    fdQuRows.top = new FormAttachment( wFl, margin );
+    fdQuRows.left = new FormAttachment( middle, 0 );
+    fdQuRows.right = new FormAttachment( 100, -wRowsReference.getBounds().width - margin );
+    wRows.setLayoutData( fdQuRows );
+    FormData fdQuRowsReference = new FormData();
+    fdQuRowsReference.top = new FormAttachment( wFl, margin );
+    fdQuRowsReference.left = new FormAttachment( wRows, 0 );
+    fdQuRowsReference.right = new FormAttachment( 100, 0 );
+    wRowsReference.setLayoutData( fdQuRowsReference );
+    
+    // facetField
+    wlFacetField = new Label( wQueryGroup, SWT.RIGHT );
+    wlFacetField.setText( BaseMessages.getString( PKG, "SolrInputDialog.Query.FacetField.Label" ) );
+    props.setLook( wlFacetField );
+    FormData fdlQuFacetField = new FormData();
+    fdlQuFacetField.top = new FormAttachment( wRows, margin );
+    fdlQuFacetField.left = new FormAttachment( 0, 0 );
+    fdlQuFacetField.right = new FormAttachment( middle, -margin );
+    wlFacetField.setLayoutData( fdlQuFacetField );
+    wFacetField = new TextVar( transMeta, wQueryGroup, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
+    wFacetField.addModifyListener( lsMod );
+    wFacetField.setToolTipText( BaseMessages.getString( PKG, "SolrInputDialog.Query.FacetField.Tooltip" ) );
+    props.setLook( wFacetField );
+    wFacetFieldReference = new Link( wQueryGroup, SWT.SINGLE );
+    wFacetFieldReference.setText( BaseMessages.getString( PKG, "SolrInputDialog.Query.Reference.Label" ) );
+    props.setLook( wFacetFieldReference );
+    wFacetFieldReference.addListener( SWT.Selection, new Listener() {
+      @Override
+      public void handleEvent( Event ev ) {
+        BareBonesBrowserLaunch.openURL( REFERENCE_FACETFIELD_URI );
+      }
+    } );
+    wFacetFieldReference.pack( true );
+    FormData fdQuFacetField = new FormData();
+    fdQuFacetField.top = new FormAttachment( wRows, margin );
+    fdQuFacetField.left = new FormAttachment( middle, 0 );
+    fdQuFacetField.right = new FormAttachment( 100, -wFacetFieldReference.getBounds().width - margin );
+    wFacetField.setLayoutData( fdQuFacetField );
+    FormData fdQuFacetFieldReference = new FormData();
+    fdQuFacetFieldReference.top = new FormAttachment( wRows, margin );
+    fdQuFacetFieldReference.left = new FormAttachment( wFacetField, 0 );
+    fdQuFacetFieldReference.right = new FormAttachment( 100, 0 );
+    wFacetFieldReference.setLayoutData( fdQuFacetFieldReference );
+    
+    // facetQuery
+    wlFacetQuery = new Label( wQueryGroup, SWT.RIGHT );
+    wlFacetQuery.setText( BaseMessages.getString( PKG, "SolrInputDialog.Query.FacetQuery.Label" ) );
+    props.setLook( wlFacetQuery );
+    FormData fdlQuFacetQuery = new FormData();
+    fdlQuFacetQuery.top = new FormAttachment( wFacetField, margin );
+    fdlQuFacetQuery.left = new FormAttachment( 0, 0 );
+    fdlQuFacetQuery.right = new FormAttachment( middle, -margin );
+    wlFacetQuery.setLayoutData( fdlQuFacetQuery );
+    wFacetQuery = new TextVar( transMeta, wQueryGroup, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
+    wFacetQuery.addModifyListener( lsMod );
+    wFacetQuery.setToolTipText( BaseMessages.getString( PKG, "SolrInputDialog.Query.FacetQuery.Tooltip" ) );
+    props.setLook( wFacetQuery );
+    wFacetQueryReference = new Link( wQueryGroup, SWT.SINGLE );
+    wFacetQueryReference.setText( BaseMessages.getString( PKG, "SolrInputDialog.Query.Reference.Label" ) );
+    props.setLook( wFacetQueryReference );
+    wFacetQueryReference.addListener( SWT.Selection, new Listener() {
+      @Override
+      public void handleEvent( Event ev ) {
+        BareBonesBrowserLaunch.openURL( REFERENCE_FACETQUERY_URI );
+      }
+    } );
+    wFacetQueryReference.pack( true );
+    FormData fdQuFacetQuery = new FormData();
+    fdQuFacetQuery.top = new FormAttachment( wFacetField, margin );
+    fdQuFacetQuery.left = new FormAttachment( middle, 0 );
+    fdQuFacetQuery.right = new FormAttachment( 100, -wFacetQueryReference.getBounds().width - margin );
+    wFacetQuery.setLayoutData( fdQuFacetQuery );
+    FormData fdQuFacetQueryReference = new FormData();
+    fdQuFacetQueryReference.top = new FormAttachment( wFacetField, margin );
+    fdQuFacetQueryReference.left = new FormAttachment( wFacetQuery, 0 );
+    fdQuFacetQueryReference.right = new FormAttachment( 100, 0 );
+    wFacetQueryReference.setLayoutData( fdQuFacetQueryReference );
+    
+    
+    fdQueryGroup = new FormData();
+    fdQueryGroup.left = new FormAttachment( 0, 0 );
+    fdQueryGroup.right = new FormAttachment( 100, 0 );
+    fdQueryGroup.top = new FormAttachment( wConnectGroup, 2 * margin );
+    wQueryGroup.setLayoutData( fdQueryGroup );
     
     
     // ////////////////////////
@@ -658,10 +630,12 @@ public String open() {
       }
     };
     wStepname.addSelectionListener( lsDef );
-    wQuStartDate.addSelectionListener( lsDef );
-    wQuEndDate.addSelectionListener( lsDef );
-    wQuElements.addSelectionListener( lsDef );
-    wQuMetrics.addSelectionListener( lsDef );
+    wQ.addSelectionListener( lsDef );
+    wFq.addSelectionListener( lsDef );
+    wFl.addSelectionListener( lsDef );
+    wRows.addSelectionListener( lsDef );
+    wFacetField.addSelectionListener( lsDef );
+    wFacetQuery.addSelectionListener( lsDef );
 
     // Detect X or ALT-F4 or something that kills this window...
     shell.addShellListener(
@@ -693,82 +667,33 @@ public String open() {
     return stepname;
   }
 
-private void getReportSuiteIdsList() {
-    if ( !gotReportSuiteIds ) {
-      String selectedField = wReportSuiteId.getText();
-      wReportSuiteId.removeAll();
-      try {
-	      SolrInputMeta meta = new SolrInputMeta();
-	      getInfo( meta );
-	      // get real values
-	      String realUsername = transMeta.environmentSubstitute( meta.getUserName() );
-	      String realSecret = transMeta.environmentSubstitute( meta.getSecret() );
-		  AnalyticsClient client = new AnalyticsClientBuilder()
-				  .setEndpoint("api2.omniture.com")
-				  .authenticateWithSecret(realUsername, realSecret)
-				  .build();
-		  ReportSuiteMethods reportSuiteMethods = new ReportSuiteMethods(client);
-		  CompanyReportSuites reportSuiteIds = new CompanyReportSuites();
-		  reportSuiteIds = reportSuiteMethods.getReportSuites();
-		  String[] reportsuiteids = new String[reportSuiteIds.getReportSuites().size()];
-		  for (int i = 0; i < reportSuiteIds.getReportSuites().size(); i++) {
-			  reportsuiteids[i] = reportSuiteIds.getReportSuites().get(i).getRsid();
-		  }
-          if ( reportsuiteids != null && reportsuiteids.length > 0 ) {
-            // populate combo
-            wReportSuiteId.setItems( reportsuiteids );
-          }
-          gotReportSuiteIds = true;
-          getReportSuiteIdsListError = false;
-      } catch ( Exception e ) {
-        new ErrorDialog( shell, BaseMessages.getString(
-          PKG, "SolrInputDialog.ErrorRetrieveReportSuiteIds.DialogTitle" ), BaseMessages.getString(
-          PKG, "SolrInputDialog.ErrorRetrieveData.ErrorRetrieveReportSuiteIds" ), e );
-        getReportSuiteIdsListError = true;
-      } finally {
-        if ( !Const.isEmpty( selectedField ) ) {
-          wReportSuiteId.setText( selectedField );
-        }
-      }
-    }
-  }
-  
+//http://www.programcreek.com/java-api-examples/index.php?api=org.apache.solr.client.solrj.response.SolrPingResponse
   private void testConnection() {
-
 	    boolean successConnection = true;
 	    String msgError = null;
-	    CompanyReportSuites reportSuiteIds = new CompanyReportSuites();
-	    try {
-	      SolrInputMeta meta = new SolrInputMeta();
-	      getInfo( meta );
-	      // get real values
-	      String realUsername = transMeta.environmentSubstitute( meta.getUserName() );
-	      String realSecret = transMeta.environmentSubstitute( meta.getSecret() );
-		  AnalyticsClient client = new AnalyticsClientBuilder()
-				  .setEndpoint("api2.omniture.com")
-				  .authenticateWithSecret(realUsername, realSecret)
-				  .build();
-		  ReportSuiteMethods reportSuiteMethods = new ReportSuiteMethods(client);
-		  reportSuiteIds = reportSuiteMethods.getReportSuites();
-		  if(reportSuiteIds.getReportSuites().size() < 1){
-			  successConnection = false;  
-		  }
-	    } catch ( Exception e ) {
-	      successConnection = false;
-	      msgError = e.getMessage();
-	    }
+		try {
+	        SolrInputMeta meta = new SolrInputMeta();
+	        getInfo( meta );
+	        String realURL = transMeta.environmentSubstitute( meta.getURL() );
+			SolrServer solr = new HttpSolrServer(realURL);
+			SolrPingResponse response = solr.ping();
+		    if (!((String) response.getResponse().get("status")).equals("OK")) {
+		    	successConnection = false;
+		    }
+		} catch (Exception e) {
+		      successConnection = false;
+		      msgError = e.getMessage();
+		}
 	    if ( successConnection ) {
 	      MessageBox mb = new MessageBox( shell, SWT.OK | SWT.ICON_INFORMATION );
-	      mb.setMessage( BaseMessages.getString( PKG, "SolrInputDialog.Connected.OK", 
-	    		  wUserName.getText(), reportSuiteIds.getReportSuites().size())
+	      mb.setMessage( BaseMessages.getString( PKG, "SolrInputDialog.Connected.OK", wURL.getText())
 	        + Const.CR );
 	      mb.setText( BaseMessages.getString( PKG, "SolrInputDialog.Connected.Title.Ok" ) );
 	      mb.open();
 	    } else {
 	    	if(msgError == null){
 	  	      MessageBox mb = new MessageBox( shell, SWT.OK | SWT.ICON_INFORMATION );
-		      mb.setMessage( BaseMessages.getString( PKG, "SolrInputDialog.Connected.NoReportSuites", 
-		    		  wUserName.getText(), reportSuiteIds.getReportSuites().size())
+		      mb.setMessage( BaseMessages.getString( PKG, "SolrInputDialog.Connected.StatusNOK", wURL.getText())
 		        + Const.CR );
 		      mb.setText( BaseMessages.getString( PKG, "SolrInputDialog.Connected.Title.Error" ) );
 		      mb.open();
@@ -776,7 +701,7 @@ private void getReportSuiteIdsList() {
 		      new ErrorDialog(
 		  	        shell,
 		  	        BaseMessages.getString( PKG, "SolrInputDialog.Connected.Title.Error" ),
-		  	        BaseMessages.getString( PKG, "SolrInputDialog.Connected.NOK", wUserName.getText() ),
+		  	        BaseMessages.getString( PKG, "SolrInputDialog.Connected.NOK", wURL.getText() ),
 		  	        new Exception( msgError ) );
 		  	    }
 	    }
@@ -790,81 +715,46 @@ private void getReportSuiteIdsList() {
 	      // clear the current fields grid
 	      wFields.removeAll();
 	      // get real values
-	      String realUsername = transMeta.environmentSubstitute( meta.getUserName() );
-	      String realSecret = transMeta.environmentSubstitute( meta.getSecret() );
-	      String realReportSuiteId = transMeta.environmentSubstitute( meta.getReportSuiteId() );
-	      String realStartDate = transMeta.environmentSubstitute( meta.getStartDate() );
-	      String realEndDate = transMeta.environmentSubstitute( meta.getEndDate() );
-	      String realDateGranularity = transMeta.environmentSubstitute( meta.getDateGranularity() );
-	      String realElements = transMeta.environmentSubstitute( meta.getElements() );
-	      String realMetrics = transMeta.environmentSubstitute( meta.getMetrics() );
-	      String realSegments = transMeta.environmentSubstitute( meta.getSegments() );
-			
-		  AnalyticsClient client = new AnalyticsClientBuilder()
-				  .setEndpoint("api2.omniture.com")
-				  .authenticateWithSecret(realUsername, realSecret)
-				  .build();
-		  ReportDescription desc = new ReportDescription();
-		  desc.setReportSuiteID(realReportSuiteId);
-		  desc.setDateFrom(realStartDate); 
-		  desc.setDateTo(realEndDate);
-	      // parse lists of elements, metrics and segments
-		    List<ReportDescriptionMetric> descMetrics = new ArrayList<>();
-			for (String id : realMetrics.split(",")) {
-				ReportDescriptionMetric metric = new ReportDescriptionMetric();
-				metric.setId(id);
-				descMetrics.add(metric);
-			}
-			desc.setMetrics(descMetrics);
-			if(!realElements.equals("")){
-				List<ReportDescriptionElement> descElems = new ArrayList<>();
-				for (String id : realElements.split(",")) {
-					ReportDescriptionElement elem = new ReportDescriptionElement();
-					elem.setId(id);
-					descElems.add(elem);
-				}
-				desc.setElements(descElems);
-			}
-			if(!realSegments.equals("")){
-				List<ReportDescriptionSegment> descSegments = new ArrayList<>();
-				for (String id : realSegments.split(",")) {
-					ReportDescriptionSegment seg = new ReportDescriptionSegment();
-					seg.setId(id);
-					descSegments.add(seg);
-				}
-				desc.setSegments(descSegments);
-			}
-		  if(!realDateGranularity.equals("")) {
-			 desc.setDateGranularity(ReportDescriptionDateGranularity.valueOf(realDateGranularity));
-		  }
-		  ReportMethods reportMethods = new ReportMethods(client);
-		  int reportId = 0;
-		  ReportResponse response = null;
-		  try {
-		  reportId = reportMethods.queue(desc);
-		  while (response == null) {
-		  try {
-		      response = reportMethods.get(reportId);
-		  } catch (ApiException e) {
-		      if ("report_not_ready".equals(e.getError())) {
-		          System.err.println("Report not ready yet.");
-		          try {
-		  			Thread.sleep(3000);
-		  		} catch (InterruptedException e1) {
-		  			// TODO Auto-generated catch block
-		  			e1.printStackTrace();
-		  		}
-		          continue;
-		      }
-		      throw e;
-		  }
-		  }
-		  } catch (IOException i) {
-		  System.err.println("Report queuing error.");
-		  }
-		  /* Get the report */
-		  Report report = response.getReport();
-		  List<String> headerNames = report.getHeaders();
+	      String realURL = transMeta.environmentSubstitute( meta.getURL() );
+	      String realQ = transMeta.environmentSubstitute( meta.getQ() );
+	      String realFq = transMeta.environmentSubstitute( meta.getFq() );
+	      String realFl = transMeta.environmentSubstitute( meta.getFl() );
+	      String realRows = transMeta.environmentSubstitute( meta.getRows() );
+	      String realFacetQuery = transMeta.environmentSubstitute( meta.getFacetQuery() );
+	      String realFacetField = transMeta.environmentSubstitute( meta.getFacetField() );
+	      
+		  /* Send and Get the report */
+	      SolrQuery query = new SolrQuery();
+	      if ( realQ != null && !realQ.equals("")){
+	    	  query.set("q", realQ);
+	      }
+	      if ( realFl != null && !realFl.equals("")){
+	    	  query.set("fl", realFl);
+	      }
+	      if ( realFq != null && !realFq.equals("")){
+	    	  query.set("fq", realFq);
+	      }
+	      SolrServer solr = new HttpSolrServer(realURL);
+	      QueryResponse response = solr.query(query);
+	      SolrDocumentList list = response.getResults();
+	      List<String> headerNames = new ArrayList<String>();
+	      // check the fields on each document and add to master list of available fields
+	      for (int l = 0; l < list.size(); l++){
+	    	  String[] thisNamesArray = (String[]) list.get(l).getFieldNames().toArray();
+	    	  List<String> tempNew = new ArrayList<String>();
+	    	  for (int i=0; i < headerNames.size(); i++){
+	    		    for (int j=0; j < thisNamesArray.length; j++){
+	    		         if(thisNamesArray[j].equals(headerNames.get(i))){
+	    		             // don't need to add                           
+	    		         } else{
+	    		        	 tempNew.add(thisNamesArray[j]);
+	    		         }
+	    		    }
+	    		}
+	    	  for (int i=0; i < tempNew.size(); i++){
+	    		  headerNames.add(tempNew.get(i));	
+	    	  }
+	      }
 	      getTableView().table.setItemCount( headerNames.size() );
 	      for (int j = 0; j < headerNames.size(); j++) 
 	      {
@@ -927,7 +817,7 @@ private void getReportSuiteIdsList() {
     } catch ( Exception e ) {
       new ErrorDialog( shell, BaseMessages
         .getString( PKG, "SolrInputDialog.ErrorPreviewingData.DialogTitle" ), BaseMessages.getString(
-        PKG, "SolrInputDialog.ErrorPreviewingData.DialogMessage" ), e );
+        PKG, "SolrInputDialog.ErrorPreviewingData.DialogMesFacetFieldge" ), e );
     }
   }
 
@@ -935,15 +825,7 @@ private void getInfo( SolrInputMeta in ) {
 
     stepname = wStepname.getText(); // return value
     
-    in.setUserName( wUserName.getText() );
-    in.setSecret( wSecret.getText() );
-    in.setReportSuiteId( wReportSuiteId.getText() );
-    in.setStartDate( wQuStartDate.getText() );
-    in.setEndDate( wQuEndDate.getText() );
-    in.setDateGranularity( wQuDateGranularity.getText() );
-    in.setElements( wQuElements.getText() );
-    in.setMetrics( wQuMetrics.getText() );
-    in.setSegments( wQuSegments.getText() );
+    in.setURL( wURL.getText() );
 
     int nrFields = getTableView().nrNonEmpty();
 
@@ -974,16 +856,13 @@ private void getInfo( SolrInputMeta in ) {
    */
   public void getData( SolrInputMeta in ) {
 	  
-    wUserName.setText( Const.NVL( in.getUserName(), "" ) );
-    wSecret.setText( Const.NVL( in.getSecret(), "" ) );
-    wReportSuiteId.setText( Const.NVL( in.getReportSuiteId(), "" ) );
-    wQuStartDate.setText( Const.NVL( in.getStartDate(), "" ) );
-    wQuEndDate.setText( Const.NVL( in.getEndDate(), "" ) );
-    wQuDateGranularity.setText( Const.NVL( in.getDateGranularity(), "" ) );
-    wQuElements.setText( Const.NVL( in.getElements(), "" ) );
-    wQuMetrics.setText( Const.NVL( in.getMetrics(), "" ) );
-    wQuSegments.setText( Const.NVL( in.getSegments(), "" ) );
-    
+    wURL.setText( Const.NVL( in.getURL(), "" ) );
+    wQ.setText( Const.NVL( in.getQ(), "" ) );
+    wFq.setText( Const.NVL( in.getFq(), "" ) );
+    wFl.setText( Const.NVL( in.getFl(), "" ) );
+    wRows.setText( Const.NVL( in.getRows(), "" ) );
+    wFacetField.setText( Const.NVL( in.getFacetField(), "" ) );
+    wFacetQuery.setText( Const.NVL( in.getFacetQuery(), "" ) );
     if ( log.isDebug() ) {
       logDebug( BaseMessages.getString( PKG, "SolrInputDialog.Log.GettingFieldsInfo" ) );
     }

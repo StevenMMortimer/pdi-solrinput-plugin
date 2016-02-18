@@ -29,8 +29,9 @@ import org.pentaho.di.core.row.RowMetaInterface;
 import org.pentaho.di.trans.step.BaseStepData;
 import org.pentaho.di.trans.step.StepDataInterface;
 
-import com.adobe.analytics.client.AnalyticsClient;
-import com.adobe.analytics.client.domain.Record;
+import org.apache.solr.client.*;
+import org.apache.solr.client.solrj.impl.HttpSolrServer;
+import org.apache.solr.common.SolrDocumentList;
 
 /**
  * This class is part of the demo step plug-in implementation.
@@ -58,10 +59,10 @@ public class SolrInputData extends BaseStepData implements StepDataInterface {
 	public RowMetaInterface convertRowMeta;
 	public int nrfields;
 	public int recordIndex;
-	public AnalyticsClient client;
-	public List<String> headerNames;
-	public List<Record> records;
+	public SolrDocumentList records;
 	public Object previousRow;
+	public HttpSolrServer solr;
+	public SolrDocumentList list;
 	
     public SolrInputData()
 	{

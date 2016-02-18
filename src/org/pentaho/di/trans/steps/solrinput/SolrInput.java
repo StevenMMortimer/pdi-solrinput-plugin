@@ -26,7 +26,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.commons.collections4.IteratorUtils;
 import org.pentaho.di.core.Const;
 import org.pentaho.di.core.exception.KettleException;
 import org.pentaho.di.core.row.RowDataUtil;
@@ -44,9 +43,13 @@ import org.pentaho.di.trans.step.StepMetaInterface;
 import org.pentaho.di.trans.steps.solrinput.SolrInputData;
 import org.pentaho.di.trans.steps.solrinput.SolrInputMeta;
 
-import com.adobe.analytics.client.*;
-import com.adobe.analytics.client.domain.*;
-import com.adobe.analytics.client.methods.*;
+import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.SolrServer;
+import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.HttpSolrServer;
+import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.common.SolrDocument;
+import org.apache.solr.common.SolrDocumentList;
 
 /**
  * This class is part of the demo step plug-in implementation.
@@ -119,51 +122,33 @@ public class SolrInput extends BaseStep implements StepInterface {
 		      // For String to <type> conversions, we allocate a conversion meta data row as well...
 		      data.convertRowMeta = data.outputRowMeta.cloneToType( ValueMetaInterface.TYPE_STRING );
 		      
-		      // get report from Omniture
-		      ReportDescription desc = new ReportDescription();
-		      desc.setReportSuiteID(meta.getReportSuiteId());
-		      desc.setDateFrom(meta.getStartDate());
-		      desc.setDateTo(meta.getEndDate());
-		      desc.setDateGranularity(ReportDescriptionDateGranularity.WEEK);
-		      // parse lists of elements, metrics and segments
-			    List<ReportDescriptionMetric> descMetrics = new ArrayList<>();
-				for (String id : meta.getMetrics().split(",")) {
-					ReportDescriptionMetric metric = new ReportDescriptionMetric();
-					metric.setId(id);
-					descMetrics.add(metric);
-				}
-				desc.setMetrics(descMetrics);
-				if(!meta.getElements().equals("")){
-					List<ReportDescriptionElement> descElems = new ArrayList<>();
-					for (String id : meta.getElements().split(",")) {
-						ReportDescriptionElement elem = new ReportDescriptionElement();
-						elem.setId(id);
-						descElems.add(elem);
-					}
-					desc.setElements(descElems);
-				}
-				if(!meta.getSegments().equals("")){
-					List<ReportDescriptionSegment> descSegments = new ArrayList<>();
-					for (String id : meta.getSegments().split(",")) {
-						ReportDescriptionSegment seg = new ReportDescriptionSegment();
-						seg.setId(id);
-						descSegments.add(seg);
-					}
-					desc.setSegments(descSegments);
-				}
-			  if(!meta.getDateGranularity().equals("")) {
-			    desc.setDateGranularity(ReportDescriptionDateGranularity.valueOf(meta.getDateGranularity()));
-			  }
-		      ReportMethods reportMethods = new ReportMethods(data.client);
-		      ReportResponse reportResponse = null;
-		      try {
-				reportResponse = reportMethods.retrieveReport(desc);
-			  } catch (IOException e) {
-				e.printStackTrace();
+		      // get real values
+		      String realQ = meta.getQ();
+		      String realFl = meta.getFl();
+		      String realFq = meta.getFq();
+		      String realRows = meta.getRows();
+		      String realFacetField = meta.getFacetField();
+		      String realFacetQuery = meta.getFacetQuery();
+		      
+			  /* Send and Get the report */
+		      SolrQuery query = new SolrQuery();
+		      if ( realQ != null && !realQ.equals("")){
+		    	  query.set("q", realQ);
 		      }
-		      Report report = reportResponse.getReport();
-		      data.headerNames = report.getHeaders();
-		      data.records = report.getRecords();
+		      if ( realFl != null && !realFl.equals("")){
+		    	  query.set("fl", realFl);
+		      }
+		      if ( realFq != null && !realFq.equals("")){
+		    	  query.set("fq", realFq);
+		      }
+		      QueryResponse response = null;
+			  try {
+			  	  response = data.solr.query(query);
+			  } catch (SolrServerException e) {
+			  	  // TODO Auto-generated catch block
+				  e.printStackTrace();
+			  }
+		      data.list = response.getResults();
 		    }
 		      
 		    Object[] outputRowData = null;
@@ -174,7 +159,7 @@ public class SolrInput extends BaseStep implements StepInterface {
 			          setOutputDone();
 			          return false;
 			    }
-		    	Record record = data.records.get(data.recordIndex);
+		    	SolrDocument record = data.list.get(data.recordIndex);
 		    	outputRowData = prepareRecord(record);
 		        putRow( data.outputRowMeta, outputRowData ); // copy row to output rowset(s);
 		        data.recordIndex++;
@@ -195,19 +180,18 @@ public class SolrInput extends BaseStep implements StepInterface {
 		        }
 		        if ( sendToErrorRow ) {
 		          // Simply add this row to the error row
-		          putError( getInputRowMeta(), outputRowData, 1, errorMessage, null, "OmnitureInput001" );
+		          putError( getInputRowMeta(), outputRowData, 1, errorMessage, null, "SolrInput001" );
 		        }
 		      }
 		      return true;
 		    }
 		  
-		  private Object[] prepareRecord(Record record) throws KettleException {
+		  private Object[] prepareRecord(SolrDocument record) throws KettleException {
 		    // Build an empty row based on the meta-data
 		    Object[] outputRowData = buildEmptyRow();
 		    try {
 		      for ( int i = 0; i < data.nrfields; i++ ) {
-		    	String value = IteratorUtils.toList(record.iterator()).get(data.headerNames.indexOf(meta.getInputFields()[i].getName()));
-		        // do trimming!
+		    	  String value = record.getFieldValue(meta.getInputFields()[i].getName()).toString();
 		        switch ( meta.getInputFields()[i].getTrimType() ) {
 		          case SolrInputField.TYPE_TRIM_LEFT:
 		            value = Const.ltrim( value );
@@ -277,31 +261,14 @@ public class SolrInput extends BaseStep implements StepInterface {
 	        log.logError( BaseMessages.getString( PKG, "SolrInputDialog.FieldsMissing.DialogMessage" ) );
 	        return false;
 	      }
-	      
-	      // check username
-	      String realUser = environmentSubstitute( meta.getUserName() );
-	      if ( Const.isEmpty( realUser ) ) {
+	      // check url
+	      String realURL = environmentSubstitute( meta.getURL() );
+	      if ( Const.isEmpty( realURL ) ) {
 	        log.logError( BaseMessages.getString( PKG, "SolrInput.UsernameMissing.Error" ) );
 	        return false;
 	      }
-	      // check secret
-	      String realSecret = environmentSubstitute( meta.getSecret() );
-	      if ( Const.isEmpty( realSecret ) ) {
-	        log.logError( BaseMessages.getString( PKG, "SolrInput.SecretMissing.Error" ) );
-	        return false;
-	      }
-	      // check report suite id
-	      String realReportSuiteId = environmentSubstitute( meta.getReportSuiteId() );
-	      if ( Const.isEmpty( realReportSuiteId ) ) {
-	        log.logError( BaseMessages.getString( PKG, "SolrInput.ReportSuiteIdMissing.Error" ) );
-	        return false;
-	      }
 	      try{
-	      data.client = new AnalyticsClientBuilder()
-	    		  .setEndpoint("api2.omniture.com")
-	    		  .authenticateWithSecret(realUser, realSecret)
-	    		  .build();
-	      
+	    	  data.solr = new HttpSolrServer(realURL);
 	        return true;
 	      }  catch ( Exception e ) {
               log.logError( BaseMessages.getString( PKG, "SolrInput.Log.ErrorOccurredDuringStepInitialize" ), e );

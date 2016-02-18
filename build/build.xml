@@ -15,7 +15,7 @@
 	<property name="src" location="src" />
 	<property name="classes" location="classes" />
 	<property name="dist" location="dist" />
-	<property name="diststep" location="${dist}/steps/pdi-omniture-plugin" />
+	<property name="diststep" location="${dist}/steps/pdi-solrinput-plugin" />
 	<property name="pluginname" value="Apache Solr Input" />
 	<property name="jarfilename" value="pdi-solrinput-plugin.jar" />
 
