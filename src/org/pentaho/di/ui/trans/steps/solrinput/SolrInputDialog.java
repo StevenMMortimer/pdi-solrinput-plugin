@@ -28,7 +28,6 @@ import java.util.Collection;
 import java.util.List;
 
 import org.apache.http.client.HttpClient;
-import org.apache.solr.client.*;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServer;
