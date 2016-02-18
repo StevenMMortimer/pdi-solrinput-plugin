@@ -24,6 +24,7 @@ package org.pentaho.di.ui.trans.steps.solrinput;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 import org.apache.http.client.HttpClient;
@@ -34,7 +35,9 @@ import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.SolrPingResponse;
+import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
+import org.apache.solr.common.params.CursorMarkParams;
 import org.eclipse.swt.SWT;
 import org.pentaho.di.ui.core.dialog.EnterNumberDialog;
 import org.pentaho.di.ui.core.dialog.EnterTextDialog;
@@ -722,7 +725,6 @@ public String open() {
 	      String realRows = transMeta.environmentSubstitute( meta.getRows() );
 	      String realFacetQuery = transMeta.environmentSubstitute( meta.getFacetQuery() );
 	      String realFacetField = transMeta.environmentSubstitute( meta.getFacetField() );
-	      
 		  /* Send and Get the report */
 	      SolrQuery query = new SolrQuery();
 	      if ( realQ != null && !realQ.equals("")){
@@ -734,26 +736,42 @@ public String open() {
 	      if ( realFq != null && !realFq.equals("")){
 	    	  query.set("fq", realFq);
 	      }
-	      SolrServer solr = new HttpSolrServer(realURL);
-	      QueryResponse response = solr.query(query);
-	      SolrDocumentList list = response.getResults();
-	      List<String> headerNames = new ArrayList<String>();
-	      // check the fields on each document and add to master list of available fields
-	      for (int l = 0; l < list.size(); l++){
-	    	  String[] thisNamesArray = (String[]) list.get(l).getFieldNames().toArray();
-	    	  List<String> tempNew = new ArrayList<String>();
-	    	  for (int i=0; i < headerNames.size(); i++){
-	    		    for (int j=0; j < thisNamesArray.length; j++){
-	    		         if(thisNamesArray[j].equals(headerNames.get(i))){
-	    		             // don't need to add                           
-	    		         } else{
-	    		        	 tempNew.add(thisNamesArray[j]);
-	    		         }
-	    		    }
-	    		}
-	    	  for (int i=0; i < tempNew.size(); i++){
-	    		  headerNames.add(tempNew.get(i));	
-	    	  }
+	      query.set("rows", 20);
+	      query.setSort(SolrQuery.SortClause.desc("propid"));
+	      // You can't use "TimeAllowed" with "CursorMark"
+	      // The documentation says "Values <= 0 mean 
+	      // no time restriction", so setting to 0.
+	      query.setTimeAllowed(0);
+	      HttpSolrServer solr = new HttpSolrServer(realURL);
+	      String cursorMark = CursorMarkParams.CURSOR_MARK_START;
+	      boolean done = false;
+	      java.util.List<String> headerNames = new java.util.ArrayList<String>();
+	      org.apache.solr.client.solrj.response.QueryResponse rsp = null;
+	      while (!done) {
+	    	  query.set(org.apache.solr.common.params.CursorMarkParams.CURSOR_MARK_PARAM, cursorMark);
+	        try {
+	          rsp = solr.query(query);
+	        } catch (org.apache.solr.client.solrj.SolrServerException e) {
+	          e.printStackTrace();
+	          return;
+	        }
+	        SolrDocumentList docs = rsp.getResults();
+	        for(SolrDocument doc : docs) {
+		   	    Collection<String> thisNamesArray = doc.getFieldNames();
+	    	    String[] a = thisNamesArray.toArray(new String[thisNamesArray.size()]);
+			    for (int j=0; j < a.length; j++){
+			         if(!headerNames.contains(a[j])){
+			        	 System.out.println(a[j]);
+			        	 headerNames.add(a[j]);                           
+			         }
+			    }
+	        }
+	        String nextCursorMark = rsp.getNextCursorMark();
+	        if (cursorMark.equals(nextCursorMark)) {
+	          done = true;
+	        } else {
+	          cursorMark = nextCursorMark;
+	        }
 	      }
 	      getTableView().table.setItemCount( headerNames.size() );
 	      for (int j = 0; j < headerNames.size(); j++) 
