@@ -24,6 +24,7 @@ package org.pentaho.di.trans.steps.solrinput;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 import org.pentaho.di.core.Const;
@@ -44,12 +45,12 @@ import org.pentaho.di.trans.steps.solrinput.SolrInputData;
 import org.pentaho.di.trans.steps.solrinput.SolrInputMeta;
 
 import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
+import org.apache.solr.common.params.CursorMarkParams;
 
 /**
  * This class is part of the demo step plug-in implementation.
@@ -129,33 +130,52 @@ public class SolrInput extends BaseStep implements StepInterface {
 		      String realRows = meta.getRows();
 		      String realFacetField = meta.getFacetField();
 		      String realFacetQuery = meta.getFacetQuery();
-		      
 			  /* Send and Get the report */
 		      SolrQuery query = new SolrQuery();
-		      if ( realQ != null && !realQ.equals("")){
+		      if ( realQ != null && !realQ.equals("") ){
 		    	  query.set("q", realQ);
 		      }
-		      if ( realFl != null && !realFl.equals("")){
+		      if ( realFl != null && !realFl.equals("") ){
 		    	  query.set("fl", realFl);
 		      }
-		      if ( realFq != null && !realFq.equals("")){
+		      if ( realFq != null && !realFq.equals("") ){
 		    	  query.set("fq", realFq);
 		      }
-		      QueryResponse response = null;
-			  try {
-			  	  response = data.solr.query(query);
-			  } catch (SolrServerException e) {
-			  	  // TODO Auto-generated catch block
-				  e.printStackTrace();
-			  }
-		      data.list = response.getResults();
+		      query.set("rows", 20);
+		      query.setSort(SolrQuery.SortClause.desc("propid"));
+		      // You can't use "TimeAllowed" with "CursorMark"
+		      // The documentation says "Values <= 0 mean 
+		      // no time restriction", so setting to 0.
+		      query.setTimeAllowed(0);
+		      String cursorMark = CursorMarkParams.CURSOR_MARK_START;
+		      boolean done = false;
+		      QueryResponse rsp = null;
+		      while (!done) {
+		    	query.set(CursorMarkParams.CURSOR_MARK_PARAM, cursorMark);
+		        try {
+		          rsp = data.solr.query(query);
+		        } catch (SolrServerException e) {
+		          e.printStackTrace();
+
+		        }	        
+		        SolrDocumentList theseDocs = rsp.getResults();
+		        for(SolrDocument doc : theseDocs) {
+		        	data.list.add(doc);
+		        }
+		        String nextCursorMark = rsp.getNextCursorMark();
+		        if (cursorMark.equals(nextCursorMark)) {
+		          done = true;
+		        } else {
+		          cursorMark = nextCursorMark;
+		        }
+		      }
 		    }
 		      
 		    Object[] outputRowData = null;
 		    
 		    try {
 		        // get one row if we can
-		        if ( data.records.size()-1 < data.recordIndex ) {
+		        if ( data.list.size()-1 < data.recordIndex ) {
 			          setOutputDone();
 			          return false;
 			    }
@@ -189,9 +209,14 @@ public class SolrInput extends BaseStep implements StepInterface {
 		  private Object[] prepareRecord(SolrDocument record) throws KettleException {
 		    // Build an empty row based on the meta-data
 		    Object[] outputRowData = buildEmptyRow();
+	   	    java.util.Collection<String> thisNamesArray = record.getFieldNames();
+	   	    List<String> a = new ArrayList<String>(thisNamesArray);
 		    try {
 		      for ( int i = 0; i < data.nrfields; i++ ) {
-		    	  String value = record.getFieldValue(meta.getInputFields()[i].getName()).toString();
+		    	  String value = "";
+		    	  if(a.contains(meta.getInputFields()[i].getName())){
+		    		  value = record.getFieldValue(meta.getInputFields()[i].getName()).toString();
+		    	  }
 		        switch ( meta.getInputFields()[i].getTrimType() ) {
 		          case SolrInputField.TYPE_TRIM_LEFT:
 		            value = Const.ltrim( value );
@@ -214,7 +239,7 @@ public class SolrInput extends BaseStep implements StepInterface {
 		      data.previousRow = irow == null ? outputRowData : irow.cloneRow( outputRowData ); // copy it to make
 		    } catch ( Exception e ) {
 		      throw new KettleException( BaseMessages
-		        .getString( PKG, "SolrInput.Exception.CanNotParseFromOmniture" ), e );
+		        .getString( PKG, "SolrInput.Exception.CanNotParseFromSolr" ), e );
 		    }
 		    return outputRowData;
 		  }
@@ -268,7 +293,7 @@ public class SolrInput extends BaseStep implements StepInterface {
 	        return false;
 	      }
 	      try{
-	    	  data.solr = new HttpSolrServer(realURL);
+	    	data.solr = new HttpSolrServer(realURL);
 	        return true;
 	      }  catch ( Exception e ) {
               log.logError( BaseMessages.getString( PKG, "SolrInput.Log.ErrorOccurredDuringStepInitialize" ), e );

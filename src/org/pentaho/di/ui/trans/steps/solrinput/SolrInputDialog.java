@@ -22,15 +22,12 @@
 
 package org.pentaho.di.ui.trans.steps.solrinput;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.SolrServer;
+import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.SolrPingResponse;
@@ -268,15 +265,24 @@ public String open() {
      * // SOLR QUERY DEFINITION
      *************************************************/
     
+    wQueryGroup = new Group( wSetupComp, SWT.SHADOW_ETCHED_IN );
+    wQueryGroup.setText( BaseMessages.getString( PKG, "SolrInputDialog.QueryGroup.Label" ) );
+    FormLayout freportLayout = new FormLayout();
+    freportLayout.marginWidth = 3;
+    freportLayout.marginHeight = 3;
+    wQueryGroup.setLayout( freportLayout );
+    props.setLook( wQueryGroup );
+    
     // q line
     wlQ = new Label( wQueryGroup, SWT.RIGHT );
     wlQ.setText( BaseMessages.getString( PKG, "SolrInputDialog.Query.Q.Label" ) );
     props.setLook( wlQ );
     FormData fdlQuQ = new FormData();
-    fdlQuQ.top = new FormAttachment( wConnectGroup, 2 * margin );
+    fdlQuQ.top = new FormAttachment( wQueryGroup, 2 * margin );
     fdlQuQ.left = new FormAttachment( 0, 0 );
     fdlQuQ.right = new FormAttachment( middle, -margin );
     wlQ.setLayoutData( fdlQuQ );
+    
     wQ = new TextVar( transMeta, wQueryGroup, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
     wQ.addModifyListener( lsMod );
     wQ.setToolTipText( BaseMessages.getString( PKG, "SolrInputDialog.Query.Q.Tooltip" ) );
@@ -292,12 +298,12 @@ public String open() {
     } );
     wQReference.pack( true );
     FormData fdQuQ = new FormData();
-    fdQuQ.top = new FormAttachment( wConnectGroup, 2 * margin );
+    fdQuQ.top = new FormAttachment( wQueryGroup, 2 * margin );
     fdQuQ.left = new FormAttachment( middle, 0 );
     fdQuQ.right = new FormAttachment( 100, -wQReference.getBounds().width - margin );
     wQ.setLayoutData( fdQuQ );
     FormData fdQuQReference = new FormData();
-    fdQuQReference.top = new FormAttachment( wConnectGroup, 2 * margin );
+    fdQuQReference.top = new FormAttachment( wQueryGroup, 2 * margin );
     fdQuQReference.left = new FormAttachment( wQ, 0 );
     fdQuQReference.right = new FormAttachment( 100, 0 );
     wQReference.setLayoutData( fdQuQReference );
@@ -326,12 +332,12 @@ public String open() {
     } );
     wFqReference.pack( true );
     FormData fdQuFq = new FormData();
-    fdQuFq.top = new FormAttachment( wFl, margin );
+    fdQuFq.top = new FormAttachment( wQ, margin );
     fdQuFq.left = new FormAttachment( middle, 0 );
     fdQuFq.right = new FormAttachment( 100, -wFqReference.getBounds().width - margin );
     wFq.setLayoutData( fdQuFq );
     FormData fdQuFqReference = new FormData();
-    fdQuFqReference.top = new FormAttachment( wFl, margin );
+    fdQuFqReference.top = new FormAttachment( wQ, margin );
     fdQuFqReference.left = new FormAttachment( wFq, 0 );
     fdQuFqReference.right = new FormAttachment( 100, 0 );
     wFqReference.setLayoutData( fdQuFqReference );
@@ -678,7 +684,7 @@ public String open() {
 	        SolrInputMeta meta = new SolrInputMeta();
 	        getInfo( meta );
 	        String realURL = transMeta.environmentSubstitute( meta.getURL() );
-			SolrServer solr = new HttpSolrServer(realURL);
+	        HttpSolrServer solr = new HttpSolrServer(realURL);
 			SolrPingResponse response = solr.ping();
 		    if (!((String) response.getResponse().get("status")).equals("OK")) {
 		    	successConnection = false;
@@ -727,13 +733,13 @@ public String open() {
 	      String realFacetField = transMeta.environmentSubstitute( meta.getFacetField() );
 		  /* Send and Get the report */
 	      SolrQuery query = new SolrQuery();
-	      if ( realQ != null && !realQ.equals("")){
+	      if ( realQ != null && !realQ.equals("") ){
 	    	  query.set("q", realQ);
 	      }
-	      if ( realFl != null && !realFl.equals("")){
+	      if ( realFl != null && !realFl.equals("") ){
 	    	  query.set("fl", realFl);
 	      }
-	      if ( realFq != null && !realFq.equals("")){
+	      if ( realFq != null && !realFq.equals("") ){
 	    	  query.set("fq", realFq);
 	      }
 	      query.set("rows", 20);
@@ -745,13 +751,13 @@ public String open() {
 	      HttpSolrServer solr = new HttpSolrServer(realURL);
 	      String cursorMark = CursorMarkParams.CURSOR_MARK_START;
 	      boolean done = false;
-	      java.util.List<String> headerNames = new java.util.ArrayList<String>();
-	      org.apache.solr.client.solrj.response.QueryResponse rsp = null;
+	      List<String> headerNames = new ArrayList<String>();
+	      QueryResponse rsp = null;
 	      while (!done) {
-	    	  query.set(org.apache.solr.common.params.CursorMarkParams.CURSOR_MARK_PARAM, cursorMark);
+	    	query.set(CursorMarkParams.CURSOR_MARK_PARAM, cursorMark);
 	        try {
 	          rsp = solr.query(query);
-	        } catch (org.apache.solr.client.solrj.SolrServerException e) {
+	        } catch (SolrServerException e) {
 	          e.printStackTrace();
 	          return;
 	        }
@@ -761,7 +767,6 @@ public String open() {
 	    	    String[] a = thisNamesArray.toArray(new String[thisNamesArray.size()]);
 			    for (int j=0; j < a.length; j++){
 			         if(!headerNames.contains(a[j])){
-			        	 System.out.println(a[j]);
 			        	 headerNames.add(a[j]);                           
 			         }
 			    }
@@ -844,6 +849,12 @@ private void getInfo( SolrInputMeta in ) {
     stepname = wStepname.getText(); // return value
     
     in.setURL( wURL.getText() );
+    in.setQ( wQ.getText() );
+    in.setFq( wFq.getText() );
+    in.setFl( wFl.getText() );
+    in.setRows( wRows.getText() );
+    in.setFacetQuery( wFacetQuery.getText() );
+    in.setFacetField( wFacetField.getText() );
 
     int nrFields = getTableView().nrNonEmpty();
 

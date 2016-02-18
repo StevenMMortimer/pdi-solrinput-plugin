@@ -55,7 +55,6 @@ public class SolrInputData extends BaseStepData implements StepDataInterface {
 	public RowMetaInterface convertRowMeta;
 	public int nrfields;
 	public int recordIndex;
-	public SolrDocumentList records;
 	public Object previousRow;
 	public HttpSolrServer solr;
 	public SolrDocumentList list;
@@ -64,6 +63,7 @@ public class SolrInputData extends BaseStepData implements StepDataInterface {
 	{
 		super();
 		recordIndex = 0;
+		list = new SolrDocumentList();
 	}
 }
 	
