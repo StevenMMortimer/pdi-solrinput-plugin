@@ -22,21 +22,16 @@
 
 package org.pentaho.di.trans.steps.solrinput;
 
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.List;
-
 import org.pentaho.di.core.CheckResult;
 import org.pentaho.di.core.CheckResultInterface;
 import org.pentaho.di.core.Const;
 import org.pentaho.di.core.annotations.Step;
 import org.pentaho.di.core.database.DatabaseMeta;
-import org.pentaho.di.core.encryption.Encr;
 import org.pentaho.di.core.exception.KettleException;
 import org.pentaho.di.core.exception.KettleValueException;
 import org.pentaho.di.core.exception.KettleXMLException;
 import org.pentaho.di.core.row.RowMetaInterface;
-import org.pentaho.di.core.row.ValueMeta;
 import org.pentaho.di.core.row.ValueMetaInterface;
 import org.pentaho.di.core.row.value.ValueMetaBase;
 import org.pentaho.di.core.row.value.ValueMetaFactory;
@@ -53,20 +48,15 @@ import org.pentaho.di.trans.step.StepInterface;
 import org.pentaho.di.trans.step.StepMeta;
 import org.pentaho.di.trans.step.StepMetaInterface;
 import org.pentaho.di.trans.steps.solrinput.SolrInput;
-import org.pentaho.di.trans.steps.solrinput.SolrInputData;
 import org.pentaho.di.trans.steps.solrinput.SolrInputField;
 import org.pentaho.di.core.exception.KettleStepException;
 import org.pentaho.metastore.api.IMetaStore;
 import org.w3c.dom.Node;
 
-@SuppressWarnings("deprecation")
 @Step(id = "SolrInputStep", i18nPackageName = "org.pentaho.di.trans.steps.solrinput", name = "SolrInput.TypeLongDesc.SolrInput", description = "SolrInput.TypeTooltipDesc.SolrInput", categoryDescription = "i18n:org.pentaho.di.trans.step:BaseStep.Category.Input", image = "SolrInput.svg", documentationUrl = "http://wiki.pentaho.com")
 public class SolrInputMeta extends BaseStepMeta implements StepMetaInterface {
 
   private static Class<?> PKG = SolrInputMeta.class; // for i18n purposes
-
-  public static final String FIELD_TYPE_ELEMENT = "Element";
-  public static final String FIELD_TYPE_METRIC = "Metric";
   
   private String URL;
   private String q;
@@ -285,7 +275,7 @@ public class SolrInputMeta extends BaseStepMeta implements StepMetaInterface {
 	        SolrInputField field = new SolrInputField();
 
 	        field.setName( rep.getStepAttributeString( id_step, i, "field_name" ) );
-	        field.setType( ValueMeta.getType( rep.getStepAttributeString( id_step, i, "field_type" ) ) );
+	        field.setType( ValueMetaBase.getType( rep.getStepAttributeString( id_step, i, "field_type" ) ) );
 	        field.setFormat( rep.getStepAttributeString( id_step, i, "field_format" ) );
 	        field.setCurrencySymbol( rep.getStepAttributeString( id_step, i, "field_currency" ) );
 	        field.setDecimalSymbol( rep.getStepAttributeString( id_step, i, "field_decimal" ) );

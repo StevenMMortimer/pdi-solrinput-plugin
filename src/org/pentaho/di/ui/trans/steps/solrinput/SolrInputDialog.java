@@ -83,6 +83,7 @@ import org.pentaho.di.trans.step.BaseStepMeta;
 import org.pentaho.di.trans.step.StepDialogInterface;
 import org.pentaho.di.trans.steps.solrinput.SolrInputField;
 import org.pentaho.di.trans.steps.solrinput.SolrInputMeta;
+import org.pentaho.di.ui.trans.steps.solrinput.BareBonesBrowserLaunch;
 import org.pentaho.di.ui.core.widget.LabelTextVar;
 import org.pentaho.di.ui.core.widget.TableView;
 import org.pentaho.di.ui.core.widget.TextVar;

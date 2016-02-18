@@ -24,7 +24,7 @@ package org.pentaho.di.trans.steps.solrinput;
 
 import org.pentaho.di.core.Const;
 import org.pentaho.di.core.exception.KettleStepException;
-import org.pentaho.di.core.row.ValueMeta;
+import org.pentaho.di.core.row.value.ValueMetaBase;
 import org.pentaho.di.core.xml.XMLHandler;
 import org.pentaho.di.i18n.BaseMessages;
 import org.w3c.dom.Node;
@@ -35,7 +35,7 @@ import org.w3c.dom.Node;
  * @author Steven Mortimer
  * @since 2016-02-12
  */
-@SuppressWarnings("deprecation")
+
 public class SolrInputField implements Cloneable {
   private static Class<?> PKG = SolrInputMeta.class; // for i18n purposes, needed by Translator2!!
 
@@ -64,7 +64,7 @@ public class SolrInputField implements Cloneable {
 
   public SolrInputField( String fieldname ) {
     this.name = fieldname;
-    this.type = ValueMeta.TYPE_STRING;
+    this.type = ValueMetaBase.TYPE_STRING;
     this.format = "";
     this.length = -1;
     this.precision = -1;
@@ -97,7 +97,7 @@ public class SolrInputField implements Cloneable {
 
   public SolrInputField( Node fnode ) throws KettleStepException {
     setName( XMLHandler.getTagValue( fnode, "name" ) );
-    setType( ValueMeta.getType( XMLHandler.getTagValue( fnode, "type" ) ) );
+    setType( ValueMetaBase.getType( XMLHandler.getTagValue( fnode, "type" ) ) );
     setFormat( XMLHandler.getTagValue( fnode, "format" ) );
     setLength( Const.toInt( XMLHandler.getTagValue( fnode, "length" ), -1 ) );
     setPrecision( Const.toInt( XMLHandler.getTagValue( fnode, "precision" ), -1 ) );
@@ -178,7 +178,7 @@ public class SolrInputField implements Cloneable {
   }
 
   public String getTypeDesc() {
-    return ValueMeta.getTypeDesc( type );
+    return ValueMetaBase.getTypeDesc( type );
   }
 
   public void setType( int type ) {

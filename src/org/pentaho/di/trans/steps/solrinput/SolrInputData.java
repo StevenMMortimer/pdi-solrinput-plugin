@@ -22,14 +22,10 @@
 
 package org.pentaho.di.trans.steps.solrinput;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.pentaho.di.core.row.RowMetaInterface;
 import org.pentaho.di.trans.step.BaseStepData;
 import org.pentaho.di.trans.step.StepDataInterface;
 
-import org.apache.solr.client.*;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.common.SolrDocumentList;
 
