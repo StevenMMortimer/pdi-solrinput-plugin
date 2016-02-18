@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
-<project name="OmnitureStepPlugin" default="dist" basedir="..">
+<project name="SolrInputPlugin" default="dist" basedir="..">
 	<description>
-        Build file for PDI Omniture Step plugin
+        Build file for PDI Solr Input Step plugin
     </description>
 	
     <presetdef name="javac">
@@ -16,8 +16,8 @@
 	<property name="classes" location="classes" />
 	<property name="dist" location="dist" />
 	<property name="diststep" location="${dist}/steps/pdi-omniture-plugin" />
-	<property name="pluginname" value="Omniture Input" />
-	<property name="jarfilename" value="pdi-omniture-plugin.jar" />
+	<property name="pluginname" value="Apache Solr Input" />
+	<property name="jarfilename" value="pdi-solrinput-plugin.jar" />
 
 	<!-- used to compile code -->
 	<path id="compile.classpath">

@@ -17,5 +17,6 @@
 	<classpathentry kind="lib" path="lib/commons-csv-1.2.jar"/>
 	<classpathentry kind="lib" path="lib/commons-collections4-4.1.jar"/>
 	<classpathentry kind="lib" path="lib/analytics-java-library-1.1.jar"/>
+	<classpathentry kind="lib" path="lib/solr-solrj-4.0.0.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

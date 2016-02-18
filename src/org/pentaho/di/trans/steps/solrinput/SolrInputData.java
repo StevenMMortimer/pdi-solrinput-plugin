@@ -20,7 +20,7 @@
 *
 ******************************************************************************/
 
-package org.pentaho.di.trans.steps.omniture;
+package org.pentaho.di.trans.steps.solrinput;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -52,7 +52,7 @@ import com.adobe.analytics.client.domain.Record;
  * the data class. 
  *   
  */
-public class OmnitureInputData extends BaseStepData implements StepDataInterface {
+public class SolrInputData extends BaseStepData implements StepDataInterface {
 
 	public RowMetaInterface outputRowMeta;
 	public RowMetaInterface convertRowMeta;
@@ -63,7 +63,7 @@ public class OmnitureInputData extends BaseStepData implements StepDataInterface
 	public List<Record> records;
 	public Object previousRow;
 	
-    public OmnitureInputData()
+    public SolrInputData()
 	{
 		super();
 		recordIndex = 0;

@@ -20,7 +20,7 @@
 *
 ******************************************************************************/
 
-package org.pentaho.di.trans.steps.omniture;
+package org.pentaho.di.trans.steps.solrinput;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -41,8 +41,8 @@ import org.pentaho.di.trans.step.StepDataInterface;
 import org.pentaho.di.trans.step.StepInterface;
 import org.pentaho.di.trans.step.StepMeta;
 import org.pentaho.di.trans.step.StepMetaInterface;
-import org.pentaho.di.trans.steps.omniture.OmnitureInputData;
-import org.pentaho.di.trans.steps.omniture.OmnitureInputMeta;
+import org.pentaho.di.trans.steps.solrinput.SolrInputData;
+import org.pentaho.di.trans.steps.solrinput.SolrInputMeta;
 
 import com.adobe.analytics.client.*;
 import com.adobe.analytics.client.domain.*;
@@ -68,11 +68,11 @@ import com.adobe.analytics.client.methods.*;
  * 
  */
 
-public class OmnitureInput extends BaseStep implements StepInterface {
+public class SolrInput extends BaseStep implements StepInterface {
 	
-	private static Class<?> PKG = OmnitureInputMeta.class; 
-    private OmnitureInputMeta meta;
-    private OmnitureInputData data;
+	private static Class<?> PKG = SolrInputMeta.class; 
+    private SolrInputMeta meta;
+    private SolrInputData data;
 
 	/**
 	 * The constructor should simply pass on its arguments to the parent class.
@@ -83,7 +83,7 @@ public class OmnitureInput extends BaseStep implements StepInterface {
 	 * @param t					transformation description
 	 * @param dis				transformation executing
 	 */
-	public OmnitureInput(StepMeta s, StepDataInterface stepDataInterface, 
+	public SolrInput(StepMeta s, StepDataInterface stepDataInterface, 
 			int c, TransMeta t, Trans dis) {
 		super(s, stepDataInterface, c, t, dis);
 	}
@@ -186,7 +186,7 @@ public class OmnitureInput extends BaseStep implements StepInterface {
 		          sendToErrorRow = true;
 		          errorMessage = e.toString();
 		        } else {
-		          logError( BaseMessages.getString( PKG, "OmnitureInput.log.Exception", e.getMessage() ) );
+		          logError( BaseMessages.getString( PKG, "SolrInput.log.Exception", e.getMessage() ) );
 		          logError( Const.getStackTracker( e ) );
 		          setErrors( 1 );
 		          stopAll();
@@ -209,13 +209,13 @@ public class OmnitureInput extends BaseStep implements StepInterface {
 		    	String value = IteratorUtils.toList(record.iterator()).get(data.headerNames.indexOf(meta.getInputFields()[i].getName()));
 		        // do trimming!
 		        switch ( meta.getInputFields()[i].getTrimType() ) {
-		          case OmnitureInputField.TYPE_TRIM_LEFT:
+		          case SolrInputField.TYPE_TRIM_LEFT:
 		            value = Const.ltrim( value );
 		            break;
-		          case OmnitureInputField.TYPE_TRIM_RIGHT:
+		          case SolrInputField.TYPE_TRIM_RIGHT:
 		            value = Const.rtrim( value );
 		            break;
-		          case OmnitureInputField.TYPE_TRIM_BOTH:
+		          case SolrInputField.TYPE_TRIM_BOTH:
 		            value = Const.trim( value );
 		            break;
 		          default:
@@ -230,7 +230,7 @@ public class OmnitureInput extends BaseStep implements StepInterface {
 		      data.previousRow = irow == null ? outputRowData : irow.cloneRow( outputRowData ); // copy it to make
 		    } catch ( Exception e ) {
 		      throw new KettleException( BaseMessages
-		        .getString( PKG, "OmnitureInput.Exception.CanNotParseFromOmniture" ), e );
+		        .getString( PKG, "SolrInput.Exception.CanNotParseFromOmniture" ), e );
 		    }
 		    return outputRowData;
 		  }
@@ -266,34 +266,34 @@ public class OmnitureInput extends BaseStep implements StepInterface {
 	 */
 	  public boolean init( StepMetaInterface smi, StepDataInterface sdi ) {
 		
-	    meta = (OmnitureInputMeta) smi;
-	    data = (OmnitureInputData) sdi;
+	    meta = (SolrInputMeta) smi;
+	    data = (SolrInputData) sdi;
 
 	    if ( super.init( smi, sdi ) ) {
 	      // get total fields in the grid
 	      data.nrfields = meta.getInputFields().length;
 	      // Check if field list is filled
 	      if ( data.nrfields == 0 ) {
-	        log.logError( BaseMessages.getString( PKG, "OmnitureInputDialog.FieldsMissing.DialogMessage" ) );
+	        log.logError( BaseMessages.getString( PKG, "SolrInputDialog.FieldsMissing.DialogMessage" ) );
 	        return false;
 	      }
 	      
 	      // check username
 	      String realUser = environmentSubstitute( meta.getUserName() );
 	      if ( Const.isEmpty( realUser ) ) {
-	        log.logError( BaseMessages.getString( PKG, "OmnitureInput.UsernameMissing.Error" ) );
+	        log.logError( BaseMessages.getString( PKG, "SolrInput.UsernameMissing.Error" ) );
 	        return false;
 	      }
 	      // check secret
 	      String realSecret = environmentSubstitute( meta.getSecret() );
 	      if ( Const.isEmpty( realSecret ) ) {
-	        log.logError( BaseMessages.getString( PKG, "OmnitureInput.SecretMissing.Error" ) );
+	        log.logError( BaseMessages.getString( PKG, "SolrInput.SecretMissing.Error" ) );
 	        return false;
 	      }
 	      // check report suite id
 	      String realReportSuiteId = environmentSubstitute( meta.getReportSuiteId() );
 	      if ( Const.isEmpty( realReportSuiteId ) ) {
-	        log.logError( BaseMessages.getString( PKG, "OmnitureInput.ReportSuiteIdMissing.Error" ) );
+	        log.logError( BaseMessages.getString( PKG, "SolrInput.ReportSuiteIdMissing.Error" ) );
 	        return false;
 	      }
 	      try{
@@ -304,7 +304,7 @@ public class OmnitureInput extends BaseStep implements StepInterface {
 	      
 	        return true;
 	      }  catch ( Exception e ) {
-              log.logError( BaseMessages.getString( PKG, "OmnitureInput.Log.ErrorOccurredDuringStepInitialize" ), e );
+              log.logError( BaseMessages.getString( PKG, "SolrInput.Log.ErrorOccurredDuringStepInitialize" ), e );
           }
 	      return true;
 	    }
@@ -328,8 +328,8 @@ public class OmnitureInput extends BaseStep implements StepInterface {
 	public void dispose(StepMetaInterface smi, StepDataInterface sdi) {
 
 		// Casting to step-specific implementation classes is safe
-		meta = (OmnitureInputMeta) smi;
-		data = (OmnitureInputData) sdi;
+		meta = (SolrInputMeta) smi;
+		data = (SolrInputData) sdi;
 		
 	    try {
 	        if ( data.outputRowMeta != null ) {

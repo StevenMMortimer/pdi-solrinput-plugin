@@ -20,7 +20,7 @@
 *
 ******************************************************************************/
 
-package org.pentaho.di.ui.trans.steps.omniture;
+package org.pentaho.di.ui.trans.steps.solrinput;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -73,18 +73,18 @@ import org.pentaho.di.i18n.BaseMessages;
 import org.pentaho.di.trans.TransPreviewFactory;
 import org.pentaho.di.trans.step.BaseStepMeta;
 import org.pentaho.di.trans.step.StepDialogInterface;
-import org.pentaho.di.trans.steps.omniture.OmnitureInputField;
-import org.pentaho.di.trans.steps.omniture.OmnitureInputMeta;
+import org.pentaho.di.trans.steps.solrinput.SolrInputField;
+import org.pentaho.di.trans.steps.solrinput.SolrInputMeta;
 import org.pentaho.di.ui.core.widget.LabelTextVar;
 import org.pentaho.di.ui.core.widget.TableView;
 import org.pentaho.di.ui.core.widget.TextVar;
 import org.pentaho.di.ui.trans.step.BaseStepDialog;
 
-public class OmnitureInputDialog extends BaseStepDialog implements StepDialogInterface {
+public class SolrInputDialog extends BaseStepDialog implements StepDialogInterface {
 
-  private static Class<?> PKG = OmnitureInputMeta.class; // for i18n purposes
+  private static Class<?> PKG = SolrInputMeta.class; // for i18n purposes
 
-  private OmnitureInputMeta input;
+  private SolrInputMeta input;
 
   private CTabFolder wTabFolder;
   private Composite wSetupComp, wFieldsComp;
@@ -152,9 +152,9 @@ public class OmnitureInputDialog extends BaseStepDialog implements StepDialogInt
     "https://marketing.adobe.com/resources/help/en_US/analytics/segment";
   
   // constructor
-  public OmnitureInputDialog( Shell parent, Object in, TransMeta transMeta, String sname ) {
+  public SolrInputDialog( Shell parent, Object in, TransMeta transMeta, String sname ) {
     super( parent, (BaseStepMeta) in, transMeta, sname );
-    setInput( (OmnitureInputMeta) in );
+    setInput( (SolrInputMeta) in );
   }
 
   // builds and shows the dialog
@@ -178,7 +178,7 @@ public String open() {
     formLayout.marginHeight = Const.FORM_MARGIN;
 
     shell.setLayout( formLayout );
-    shell.setText( BaseMessages.getString( PKG, "OmnitureInputDialog.Shell.Title" ) );
+    shell.setText( BaseMessages.getString( PKG, "SolrInputDialog.Shell.Title" ) );
 
     middle = props.getMiddlePct();
     margin = Const.MARGIN;
@@ -216,7 +216,7 @@ public String open() {
     // ////////////////////////
 
     wSetupTab = new CTabItem( wTabFolder, SWT.NONE );
-    wSetupTab.setText( BaseMessages.getString( PKG, "OmnitureInputDialog.Tab.Setup.Label" ) );
+    wSetupTab.setText( BaseMessages.getString( PKG, "SolrInputDialog.Tab.Setup.Label" ) );
     wSetupComp = new Composite( wTabFolder, SWT.NONE );
     props.setLook( wSetupComp );
     FormLayout generalLayout = new FormLayout();
@@ -229,7 +229,7 @@ public String open() {
      * // OMNITURE CONNECTION GROUP
      *************************************************/
     wConnectGroup = new Group( wSetupComp, SWT.SHADOW_ETCHED_IN );
-    wConnectGroup.setText( BaseMessages.getString( PKG, "OmnitureInputDialog.ConnectGroup.Label" ) );
+    wConnectGroup.setText( BaseMessages.getString( PKG, "SolrInputDialog.ConnectGroup.Label" ) );
     FormLayout fconnLayout = new FormLayout();
     fconnLayout.marginWidth = 3;
     fconnLayout.marginHeight = 3;
@@ -238,8 +238,8 @@ public String open() {
 
     // UserName line
     wUserName = new LabelTextVar( transMeta, wConnectGroup,
-      BaseMessages.getString( PKG, "OmnitureInputDialog.User.Label" ),
-      BaseMessages.getString( PKG, "OmnitureInputDialog.User.Tooltip" ) );
+      BaseMessages.getString( PKG, "SolrInputDialog.User.Label" ),
+      BaseMessages.getString( PKG, "SolrInputDialog.User.Tooltip" ) );
     props.setLook( wUserName );
     wUserName.addModifyListener( lsMod );
     fdUserName = new FormData();
@@ -250,8 +250,8 @@ public String open() {
 
     // Secret line
     wSecret = new LabelTextVar( transMeta, wConnectGroup,
-      BaseMessages.getString( PKG, "OmnitureInputDialog.Secret.Label" ),
-      BaseMessages.getString( PKG, "OmnitureInputDialog.Secret.Tooltip" ), true );
+      BaseMessages.getString( PKG, "SolrInputDialog.Secret.Label" ),
+      BaseMessages.getString( PKG, "SolrInputDialog.Secret.Tooltip" ), true );
     props.setLook( wSecret );
     wSecret.addModifyListener( lsMod );
     fdSecret = new FormData();
@@ -262,7 +262,7 @@ public String open() {
     
     // ReportSuiteId line
     wlReportSuiteId = new Label( wConnectGroup, SWT.RIGHT );
-    wlReportSuiteId.setText( BaseMessages.getString( PKG, "OmnitureInputDialog.ReportSuiteId.Label" ) );
+    wlReportSuiteId.setText( BaseMessages.getString( PKG, "SolrInputDialog.ReportSuiteId.Label" ) );
     props.setLook( wlReportSuiteId );
     fdlReportSuiteId = new FormData();
     fdlReportSuiteId.top = new FormAttachment( wSecret, margin );
@@ -298,10 +298,10 @@ public String open() {
     
     // Test Omniture connection button
     wTest = new Button( wConnectGroup, SWT.PUSH );
-    wTest.setText( BaseMessages.getString( PKG, "OmnitureInputDialog.TestConnection.Label" ) );
+    wTest.setText( BaseMessages.getString( PKG, "SolrInputDialog.TestConnection.Label" ) );
     props.setLook( wTest );
     fdTest = new FormData();
-    wTest.setToolTipText( BaseMessages.getString( PKG, "OmnitureInputDialog.TestConnection.Tooltip" ) );
+    wTest.setToolTipText( BaseMessages.getString( PKG, "SolrInputDialog.TestConnection.Tooltip" ) );
     // fdTest.left = new FormAttachment(middle, 0);
     fdTest.top = new FormAttachment( wReportSuiteId, margin );
     fdTest.right = new FormAttachment( 100, 0 );
@@ -330,7 +330,7 @@ public String open() {
      *************************************************/
     
     wReportGroup = new Group( wSetupComp, SWT.SHADOW_ETCHED_IN );
-    wReportGroup.setText( BaseMessages.getString( PKG, "OmnitureInputDialog.ReportGroup.Label" ) );
+    wReportGroup.setText( BaseMessages.getString( PKG, "SolrInputDialog.ReportGroup.Label" ) );
     FormLayout freportLayout = new FormLayout();
     freportLayout.marginWidth = 3;
     freportLayout.marginHeight = 3;
@@ -339,7 +339,7 @@ public String open() {
 
     // Report start date
     wlQuStartDate = new Label( wReportGroup, SWT.RIGHT );
-    wlQuStartDate.setText( BaseMessages.getString( PKG, "OmnitureInputDialog.Report.StartDate.Label" ) );
+    wlQuStartDate.setText( BaseMessages.getString( PKG, "SolrInputDialog.Report.StartDate.Label" ) );
     props.setLook( wlQuStartDate );
     FormData fdlQuStartDate = new FormData();
     fdlQuStartDate.top = new FormAttachment( wConnectGroup, 2 * margin );
@@ -349,7 +349,7 @@ public String open() {
     
     wQuStartDate = new TextVar( transMeta, wReportGroup, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
     wQuStartDate.addModifyListener( lsMod );
-    wQuStartDate.setToolTipText( BaseMessages.getString( PKG, "OmnitureInputDialog.Report.StartDate.Tooltip" ) );
+    wQuStartDate.setToolTipText( BaseMessages.getString( PKG, "SolrInputDialog.Report.StartDate.Tooltip" ) );
     props.setLook( wQuStartDate );
     FormData fdQuStartDate = new FormData();
     fdlQuStartDate.top = new FormAttachment( wConnectGroup, 2 * margin );
@@ -359,7 +359,7 @@ public String open() {
 
     // Report end date
     wlQuEndDate = new Label( wReportGroup, SWT.RIGHT );
-    wlQuEndDate.setText( BaseMessages.getString( PKG, "OmnitureInputDialog.Report.EndDate.Label" ) );
+    wlQuEndDate.setText( BaseMessages.getString( PKG, "SolrInputDialog.Report.EndDate.Label" ) );
     props.setLook( wlQuEndDate );
     FormData fdlQuEndDate = new FormData();
     fdlQuEndDate.top = new FormAttachment( wQuStartDate, margin );
@@ -368,7 +368,7 @@ public String open() {
     wlQuEndDate.setLayoutData( fdlQuEndDate );
     wQuEndDate = new TextVar( transMeta, wReportGroup, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
     wQuEndDate.addModifyListener( lsMod );
-    wQuEndDate.setToolTipText( BaseMessages.getString( PKG, "OmnitureInputDialog.Report.EndDate.Tooltip" ) );
+    wQuEndDate.setToolTipText( BaseMessages.getString( PKG, "SolrInputDialog.Report.EndDate.Tooltip" ) );
     props.setLook( wQuEndDate );
     FormData fdQuEndDate = new FormData();
     fdQuEndDate.top = new FormAttachment( wQuStartDate, margin );
@@ -378,7 +378,7 @@ public String open() {
     
     // Report date granularity
     wlDateGranularity = new Label( wReportGroup, SWT.RIGHT );
-    wlDateGranularity.setText( BaseMessages.getString( PKG, "OmnitureInputDialog.DateGranularity.Label" ) );
+    wlDateGranularity.setText( BaseMessages.getString( PKG, "SolrInputDialog.DateGranularity.Label" ) );
     props.setLook( wlDateGranularity );
     FormData fdlDateGranularity = new FormData();
     fdlDateGranularity.top = new FormAttachment( wQuEndDate, margin );
@@ -397,7 +397,7 @@ public String open() {
 
     // Report elements
     wlQuElements = new Label( wReportGroup, SWT.RIGHT );
-    wlQuElements.setText( BaseMessages.getString( PKG, "OmnitureInputDialog.Report.Elements.Label" ) );
+    wlQuElements.setText( BaseMessages.getString( PKG, "SolrInputDialog.Report.Elements.Label" ) );
     props.setLook( wlQuElements );
     FormData fdlQuElements = new FormData();
     fdlQuElements.top = new FormAttachment( wQuDateGranularity, margin );
@@ -406,10 +406,10 @@ public String open() {
     wlQuElements.setLayoutData( fdlQuElements );
     wQuElements = new TextVar( transMeta, wReportGroup, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
     wQuElements.addModifyListener( lsMod );
-    wQuElements.setToolTipText( BaseMessages.getString( PKG, "OmnitureInputDialog.Report.Elements.Tooltip" ) );
+    wQuElements.setToolTipText( BaseMessages.getString( PKG, "SolrInputDialog.Report.Elements.Tooltip" ) );
     props.setLook( wQuElements );
     wQuElementsReference = new Link( wReportGroup, SWT.SINGLE );
-    wQuElementsReference.setText( BaseMessages.getString( PKG, "OmnitureInputDialog.Report.Reference.Label" ) );
+    wQuElementsReference.setText( BaseMessages.getString( PKG, "SolrInputDialog.Report.Reference.Label" ) );
     props.setLook( wQuElementsReference );
     wQuElementsReference.addListener( SWT.Selection, new Listener() {
       @Override
@@ -431,7 +431,7 @@ public String open() {
 
     // Report metrics
     wlQuMetrics = new Label( wReportGroup, SWT.RIGHT );
-    wlQuMetrics.setText( BaseMessages.getString( PKG, "OmnitureInputDialog.Report.Metrics.Label" ) );
+    wlQuMetrics.setText( BaseMessages.getString( PKG, "SolrInputDialog.Report.Metrics.Label" ) );
     props.setLook( wlQuMetrics );
     FormData fdlQuMetrics = new FormData();
     fdlQuMetrics.top = new FormAttachment( wQuElements, margin );
@@ -440,10 +440,10 @@ public String open() {
     wlQuMetrics.setLayoutData( fdlQuMetrics );
     wQuMetrics = new TextVar( transMeta, wReportGroup, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
     wQuMetrics.addModifyListener( lsMod );
-    wQuMetrics.setToolTipText( BaseMessages.getString( PKG, "OmnitureInputDialog.Report.Metrics.Tooltip" ) );
+    wQuMetrics.setToolTipText( BaseMessages.getString( PKG, "SolrInputDialog.Report.Metrics.Tooltip" ) );
     props.setLook( wQuMetrics );
     wQuMetricsReference = new Link( wReportGroup, SWT.SINGLE );
-    wQuMetricsReference.setText( BaseMessages.getString( PKG, "OmnitureInputDialog.Report.Reference.Label" ) );
+    wQuMetricsReference.setText( BaseMessages.getString( PKG, "SolrInputDialog.Report.Reference.Label" ) );
     props.setLook( wQuMetricsReference );
     wQuMetricsReference.addListener( SWT.Selection, new Listener() {
       @Override
@@ -466,7 +466,7 @@ public String open() {
 
     // Report segments
     wlQuSegments = new Label( wReportGroup, SWT.RIGHT );
-    wlQuSegments.setText( BaseMessages.getString( PKG, "OmnitureInputDialog.Report.Segments.Label" ) );
+    wlQuSegments.setText( BaseMessages.getString( PKG, "SolrInputDialog.Report.Segments.Label" ) );
     props.setLook( wlQuSegments );
     FormData fdlQuSegments = new FormData();
     fdlQuSegments.top = new FormAttachment( wQuMetrics, margin );
@@ -475,10 +475,10 @@ public String open() {
     wlQuSegments.setLayoutData( fdlQuSegments );
     wQuSegments = new TextVar( transMeta, wReportGroup, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
     wQuSegments.addModifyListener( lsMod );
-    wQuSegments.setToolTipText( BaseMessages.getString( PKG, "OmnitureInputDialog.Report.Segments.Tooltip" ) );
+    wQuSegments.setToolTipText( BaseMessages.getString( PKG, "SolrInputDialog.Report.Segments.Tooltip" ) );
     props.setLook( wQuSegments );
     wQuSegmentsReference = new Link( wReportGroup, SWT.SINGLE );
-    wQuSegmentsReference.setText( BaseMessages.getString( PKG, "OmnitureInputDialog.Report.Reference.Label" ) );
+    wQuSegmentsReference.setText( BaseMessages.getString( PKG, "SolrInputDialog.Report.Reference.Label" ) );
     props.setLook( wQuSegmentsReference );
     wQuSegmentsReference.addListener( SWT.Selection, new Listener() {
       @Override
@@ -510,7 +510,7 @@ public String open() {
     // ////////////////////////
 
     wFieldsTab = new CTabItem( wTabFolder, SWT.NONE );
-    wFieldsTab.setText( BaseMessages.getString( PKG, "OmnitureInputDialog.Tab.Fields.Label" ) );
+    wFieldsTab.setText( BaseMessages.getString( PKG, "SolrInputDialog.Tab.Fields.Label" ) );
 
     FormLayout fieldsLayout = new FormLayout();
     fieldsLayout.marginWidth = Const.FORM_MARGIN;
@@ -521,7 +521,7 @@ public String open() {
     props.setLook( wFieldsComp );
 
     wGet = new Button( wFieldsComp, SWT.PUSH );
-    wGet.setText( BaseMessages.getString( PKG, "OmnitureInputDialog.GetFields.Button" ) );
+    wGet.setText( BaseMessages.getString( PKG, "SolrInputDialog.GetFields.Button" ) );
     fdGet = new FormData();
     fdGet.left = new FormAttachment( 50, 0 );
     fdGet.bottom = new FormAttachment( 100, 0 );
@@ -544,36 +544,36 @@ public String open() {
     colinf =
       new ColumnInfo[] {
         new ColumnInfo(
-          BaseMessages.getString( PKG, "OmnitureInputDialog.FieldsTable.Name.Column" ),
+          BaseMessages.getString( PKG, "SolrInputDialog.FieldsTable.Name.Column" ),
           ColumnInfo.COLUMN_TYPE_TEXT, false ),
         new ColumnInfo(
-          BaseMessages.getString( PKG, "OmnitureInputDialog.FieldsTable.Type.Column" ),
+          BaseMessages.getString( PKG, "SolrInputDialog.FieldsTable.Type.Column" ),
           ColumnInfo.COLUMN_TYPE_CCOMBO, ValueMetaBase.getTypes(), true ),
         new ColumnInfo(
-          BaseMessages.getString( PKG, "OmnitureInputDialog.FieldsTable.Format.Column" ),
+          BaseMessages.getString( PKG, "SolrInputDialog.FieldsTable.Format.Column" ),
           ColumnInfo.COLUMN_TYPE_FORMAT, 3 ),
         new ColumnInfo(
-          BaseMessages.getString( PKG, "OmnitureInputDialog.FieldsTable.Length.Column" ),
+          BaseMessages.getString( PKG, "SolrInputDialog.FieldsTable.Length.Column" ),
           ColumnInfo.COLUMN_TYPE_TEXT, false ),
         new ColumnInfo(
-          BaseMessages.getString( PKG, "OmnitureInputDialog.FieldsTable.Precision.Column" ),
+          BaseMessages.getString( PKG, "SolrInputDialog.FieldsTable.Precision.Column" ),
           ColumnInfo.COLUMN_TYPE_TEXT, false ),
         new ColumnInfo(
-          BaseMessages.getString( PKG, "OmnitureInputDialog.FieldsTable.Currency.Column" ),
+          BaseMessages.getString( PKG, "SolrInputDialog.FieldsTable.Currency.Column" ),
           ColumnInfo.COLUMN_TYPE_TEXT, false ),
         new ColumnInfo(
-          BaseMessages.getString( PKG, "OmnitureInputDialog.FieldsTable.Decimal.Column" ),
+          BaseMessages.getString( PKG, "SolrInputDialog.FieldsTable.Decimal.Column" ),
           ColumnInfo.COLUMN_TYPE_TEXT, false ),
         new ColumnInfo(
-          BaseMessages.getString( PKG, "OmnitureInputDialog.FieldsTable.Group.Column" ),
+          BaseMessages.getString( PKG, "SolrInputDialog.FieldsTable.Group.Column" ),
           ColumnInfo.COLUMN_TYPE_TEXT, false ),
         new ColumnInfo(
-          BaseMessages.getString( PKG, "OmnitureInputDialog.FieldsTable.TrimType.Column" ),
-          ColumnInfo.COLUMN_TYPE_CCOMBO, OmnitureInputField.trimTypeDesc, true )
+          BaseMessages.getString( PKG, "SolrInputDialog.FieldsTable.TrimType.Column" ),
+          ColumnInfo.COLUMN_TYPE_CCOMBO, SolrInputField.trimTypeDesc, true )
       };
 
     colinf[0].setUsingVariables( true );
-    colinf[0].setToolTip( BaseMessages.getString( PKG, "OmnitureInputDialog.FieldsTable.Name.Column.Tooltip" ) );
+    colinf[0].setToolTip( BaseMessages.getString( PKG, "SolrInputDialog.FieldsTable.Name.Column.Tooltip" ) );
     wFields =
       new TableView( transMeta, wFieldsComp, SWT.FULL_SELECTION | SWT.MULTI, colinf, FieldsRows, lsMod, props );
 
@@ -698,7 +698,7 @@ private void getReportSuiteIdsList() {
       String selectedField = wReportSuiteId.getText();
       wReportSuiteId.removeAll();
       try {
-	      OmnitureInputMeta meta = new OmnitureInputMeta();
+	      SolrInputMeta meta = new SolrInputMeta();
 	      getInfo( meta );
 	      // get real values
 	      String realUsername = transMeta.environmentSubstitute( meta.getUserName() );
@@ -722,8 +722,8 @@ private void getReportSuiteIdsList() {
           getReportSuiteIdsListError = false;
       } catch ( Exception e ) {
         new ErrorDialog( shell, BaseMessages.getString(
-          PKG, "OmnitureInputDialog.ErrorRetrieveReportSuiteIds.DialogTitle" ), BaseMessages.getString(
-          PKG, "OmnitureInputDialog.ErrorRetrieveData.ErrorRetrieveReportSuiteIds" ), e );
+          PKG, "SolrInputDialog.ErrorRetrieveReportSuiteIds.DialogTitle" ), BaseMessages.getString(
+          PKG, "SolrInputDialog.ErrorRetrieveData.ErrorRetrieveReportSuiteIds" ), e );
         getReportSuiteIdsListError = true;
       } finally {
         if ( !Const.isEmpty( selectedField ) ) {
@@ -739,7 +739,7 @@ private void getReportSuiteIdsList() {
 	    String msgError = null;
 	    CompanyReportSuites reportSuiteIds = new CompanyReportSuites();
 	    try {
-	      OmnitureInputMeta meta = new OmnitureInputMeta();
+	      SolrInputMeta meta = new SolrInputMeta();
 	      getInfo( meta );
 	      // get real values
 	      String realUsername = transMeta.environmentSubstitute( meta.getUserName() );
@@ -759,24 +759,24 @@ private void getReportSuiteIdsList() {
 	    }
 	    if ( successConnection ) {
 	      MessageBox mb = new MessageBox( shell, SWT.OK | SWT.ICON_INFORMATION );
-	      mb.setMessage( BaseMessages.getString( PKG, "OmnitureInputDialog.Connected.OK", 
+	      mb.setMessage( BaseMessages.getString( PKG, "SolrInputDialog.Connected.OK", 
 	    		  wUserName.getText(), reportSuiteIds.getReportSuites().size())
 	        + Const.CR );
-	      mb.setText( BaseMessages.getString( PKG, "OmnitureInputDialog.Connected.Title.Ok" ) );
+	      mb.setText( BaseMessages.getString( PKG, "SolrInputDialog.Connected.Title.Ok" ) );
 	      mb.open();
 	    } else {
 	    	if(msgError == null){
 	  	      MessageBox mb = new MessageBox( shell, SWT.OK | SWT.ICON_INFORMATION );
-		      mb.setMessage( BaseMessages.getString( PKG, "OmnitureInputDialog.Connected.NoReportSuites", 
+		      mb.setMessage( BaseMessages.getString( PKG, "SolrInputDialog.Connected.NoReportSuites", 
 		    		  wUserName.getText(), reportSuiteIds.getReportSuites().size())
 		        + Const.CR );
-		      mb.setText( BaseMessages.getString( PKG, "OmnitureInputDialog.Connected.Title.Error" ) );
+		      mb.setText( BaseMessages.getString( PKG, "SolrInputDialog.Connected.Title.Error" ) );
 		      mb.open();
 	    	} else {
 		      new ErrorDialog(
 		  	        shell,
-		  	        BaseMessages.getString( PKG, "OmnitureInputDialog.Connected.Title.Error" ),
-		  	        BaseMessages.getString( PKG, "OmnitureInputDialog.Connected.NOK", wUserName.getText() ),
+		  	        BaseMessages.getString( PKG, "SolrInputDialog.Connected.Title.Error" ),
+		  	        BaseMessages.getString( PKG, "SolrInputDialog.Connected.NOK", wUserName.getText() ),
 		  	        new Exception( msgError ) );
 		  	    }
 	    }
@@ -785,7 +785,7 @@ private void getReportSuiteIdsList() {
   private void getFields() {
 	  
 	    try {
-	      OmnitureInputMeta meta = new OmnitureInputMeta();
+	      SolrInputMeta meta = new SolrInputMeta();
 	      getInfo( meta );
 	      // clear the current fields grid
 	      wFields.removeAll();
@@ -877,8 +877,8 @@ private void getReportSuiteIdsList() {
 	      getInput().setChanged();
 	    } catch ( Exception e ) {
 	      new ErrorDialog(
-	        shell, BaseMessages.getString( PKG, "OmnitureInputMeta.ErrorRetrieveData.DialogTitle" ), BaseMessages
-	          .getString( PKG, "OmnitureInputMeta.ErrorRetrieveData.DialogMessage" ), e );
+	        shell, BaseMessages.getString( PKG, "SolrInputMeta.ErrorRetrieveData.DialogTitle" ), BaseMessages
+	          .getString( PKG, "SolrInputMeta.ErrorRetrieveData.DialogMessage" ), e );
 	  }
   }
  
@@ -886,7 +886,7 @@ private void getReportSuiteIdsList() {
   private void getPreview() {
     try {
     	
-      OmnitureInputMeta oneMeta = new OmnitureInputMeta();
+      SolrInputMeta oneMeta = new SolrInputMeta();
       getInfo( oneMeta );
 
       // check if the path is given
@@ -895,8 +895,8 @@ private void getReportSuiteIdsList() {
         TransPreviewFactory.generatePreviewTransformation( transMeta, oneMeta, wStepname.getText() );
 
       EnterNumberDialog numberDialog = new EnterNumberDialog( shell, props.getDefaultPreviewSize(),
-        BaseMessages.getString( PKG, "OmnitureInputDialog.NumberRows.DialogTitle" ),
-        BaseMessages.getString( PKG, "OmnitureInputDialog.NumberRows.DialogMessage" ) );
+        BaseMessages.getString( PKG, "SolrInputDialog.NumberRows.DialogTitle" ),
+        BaseMessages.getString( PKG, "SolrInputDialog.NumberRows.DialogMessage" ) );
       int previewSize = numberDialog.open();
       if ( previewSize > 0 ) {
         TransPreviewProgressDialog progressDialog =
@@ -926,12 +926,12 @@ private void getReportSuiteIdsList() {
       }
     } catch ( Exception e ) {
       new ErrorDialog( shell, BaseMessages
-        .getString( PKG, "OmnitureInputDialog.ErrorPreviewingData.DialogTitle" ), BaseMessages.getString(
-        PKG, "OmnitureInputDialog.ErrorPreviewingData.DialogMessage" ), e );
+        .getString( PKG, "SolrInputDialog.ErrorPreviewingData.DialogTitle" ), BaseMessages.getString(
+        PKG, "SolrInputDialog.ErrorPreviewingData.DialogMessage" ), e );
     }
   }
 
-private void getInfo( OmnitureInputMeta in ) {
+private void getInfo( SolrInputMeta in ) {
 
     stepname = wStepname.getText(); // return value
     
@@ -950,7 +950,7 @@ private void getInfo( OmnitureInputMeta in ) {
     in.allocate( nrFields );
 
     for ( int i = 0; i < nrFields; i++ ) {
-      OmnitureInputField field = new OmnitureInputField();
+      SolrInputField field = new SolrInputField();
 
       TableItem item = wFields.getNonEmpty( i );
 
@@ -962,17 +962,17 @@ private void getInfo( OmnitureInputMeta in ) {
       field.setCurrencySymbol( item.getText( 6 ) );
       field.setDecimalSymbol( item.getText( 7 ) );
       field.setGroupSymbol( item.getText( 8 ) );
-      field.setTrimType( OmnitureInputField.getTrimTypeByDesc( item.getText( 9 ) ) );
+      field.setTrimType( SolrInputField.getTrimTypeByDesc( item.getText( 9 ) ) );
       
       in.getInputFields()[i] = field;
     }
   }
 
   /**
-   * Read the data from the OmnitureInputMeta object and show it in this dialog.
-   * @param in The OmnitureInputMeta object to obtain the data from.
+   * Read the data from the SolrInputMeta object and show it in this dialog.
+   * @param in The SolrInputMeta object to obtain the data from.
    */
-  public void getData( OmnitureInputMeta in ) {
+  public void getData( SolrInputMeta in ) {
 	  
     wUserName.setText( Const.NVL( in.getUserName(), "" ) );
     wSecret.setText( Const.NVL( in.getSecret(), "" ) );
@@ -985,11 +985,11 @@ private void getInfo( OmnitureInputMeta in ) {
     wQuSegments.setText( Const.NVL( in.getSegments(), "" ) );
     
     if ( log.isDebug() ) {
-      logDebug( BaseMessages.getString( PKG, "OmnitureInputDialog.Log.GettingFieldsInfo" ) );
+      logDebug( BaseMessages.getString( PKG, "SolrInputDialog.Log.GettingFieldsInfo" ) );
     }
     
     for ( int i = 0; i < in.getInputFields().length; i++ ) {
-    	OmnitureInputField field = in.getInputFields()[i];
+    	SolrInputField field = in.getInputFields()[i];
 
       if ( field != null ) {
         TableItem item = wFields.table.getItem( i );
@@ -1064,11 +1064,11 @@ private void getInfo( OmnitureInputMeta in ) {
     this.wFields = wFields;
   }
 
-  OmnitureInputMeta getInput() {
+  SolrInputMeta getInput() {
     return input;
   }
 
-  void setInput( OmnitureInputMeta input ) {
+  void setInput( SolrInputMeta input ) {
     this.input = input;
   }
 }

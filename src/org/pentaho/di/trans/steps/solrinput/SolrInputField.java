@@ -20,7 +20,7 @@
  *
  ******************************************************************************/
 
-package org.pentaho.di.trans.steps.omniture;
+package org.pentaho.di.trans.steps.solrinput;
 
 import org.pentaho.di.core.Const;
 import org.pentaho.di.core.exception.KettleStepException;
@@ -36,8 +36,8 @@ import org.w3c.dom.Node;
  * @since 2016-02-12
  */
 @SuppressWarnings("deprecation")
-public class OmnitureInputField implements Cloneable {
-  private static Class<?> PKG = OmnitureInputMeta.class; // for i18n purposes, needed by Translator2!!
+public class SolrInputField implements Cloneable {
+  private static Class<?> PKG = SolrInputMeta.class; // for i18n purposes, needed by Translator2!!
 
   public static final int TYPE_TRIM_NONE = 0;
   public static final int TYPE_TRIM_LEFT = 1;
@@ -62,7 +62,7 @@ public class OmnitureInputField implements Cloneable {
   private String groupSymbol;
   private int trimtype;
 
-  public OmnitureInputField( String fieldname ) {
+  public SolrInputField( String fieldname ) {
     this.name = fieldname;
     this.type = ValueMeta.TYPE_STRING;
     this.format = "";
@@ -74,7 +74,7 @@ public class OmnitureInputField implements Cloneable {
     this.trimtype = TYPE_TRIM_NONE;
   }
 
-  public OmnitureInputField() {
+  public SolrInputField() {
     this( "" );
   }
 
@@ -95,7 +95,7 @@ public class OmnitureInputField implements Cloneable {
     return retval;
   }
 
-  public OmnitureInputField( Node fnode ) throws KettleStepException {
+  public SolrInputField( Node fnode ) throws KettleStepException {
     setName( XMLHandler.getTagValue( fnode, "name" ) );
     setType( ValueMeta.getType( XMLHandler.getTagValue( fnode, "type" ) ) );
     setFormat( XMLHandler.getTagValue( fnode, "format" ) );
@@ -149,7 +149,7 @@ public class OmnitureInputField implements Cloneable {
 
   public Object clone() {
     try {
-      OmnitureInputField retval = (OmnitureInputField) super.clone();
+      SolrInputField retval = (SolrInputField) super.clone();
 
       return retval;
     } catch ( CloneNotSupportedException e ) {

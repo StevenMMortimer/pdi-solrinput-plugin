@@ -20,7 +20,7 @@
  *
  ******************************************************************************/
 
-package org.pentaho.di.ui.trans.steps.omniture;
+package org.pentaho.di.ui.trans.steps.solrinput;
 
 import java.util.Arrays;
 

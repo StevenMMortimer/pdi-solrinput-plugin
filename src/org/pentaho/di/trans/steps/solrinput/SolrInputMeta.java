@@ -20,7 +20,7 @@
 *
 ******************************************************************************/
 
-package org.pentaho.di.trans.steps.omniture;
+package org.pentaho.di.trans.steps.solrinput;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
@@ -51,18 +51,18 @@ import org.pentaho.di.trans.step.StepDataInterface;
 import org.pentaho.di.trans.step.StepInterface;
 import org.pentaho.di.trans.step.StepMeta;
 import org.pentaho.di.trans.step.StepMetaInterface;
-import org.pentaho.di.trans.steps.omniture.OmnitureInput;
-import org.pentaho.di.trans.steps.omniture.OmnitureInputData;
-import org.pentaho.di.trans.steps.omniture.OmnitureInputField;
+import org.pentaho.di.trans.steps.solrinput.SolrInput;
+import org.pentaho.di.trans.steps.solrinput.SolrInputData;
+import org.pentaho.di.trans.steps.solrinput.SolrInputField;
 import org.pentaho.di.core.exception.KettleStepException;
 import org.pentaho.metastore.api.IMetaStore;
 import org.w3c.dom.Node;
 
 @SuppressWarnings("deprecation")
-@Step(id = "OmnitureInputStep", i18nPackageName = "org.pentaho.di.trans.steps.omniture", name = "OmnitureInput.TypeLongDesc.OmnitureInput", description = "OmnitureInput.TypeTooltipDesc.OmnitureInput", categoryDescription = "i18n:org.pentaho.di.trans.step:BaseStep.Category.Input", image = "OmnitureInput.svg", documentationUrl = "http://wiki.pentaho.com")
-public class OmnitureInputMeta extends BaseStepMeta implements StepMetaInterface {
+@Step(id = "OmnitureInputStep", i18nPackageName = "org.pentaho.di.trans.steps.solrinput", name = "SolrInput.TypeLongDesc.OmnitureInput", description = "SolrInput.TypeTooltipDesc.OmnitureInput", categoryDescription = "i18n:org.pentaho.di.trans.step:BaseStep.Category.Input", image = "SolrInput.svg", documentationUrl = "http://wiki.pentaho.com")
+public class SolrInputMeta extends BaseStepMeta implements StepMetaInterface {
 
-  private static Class<?> PKG = OmnitureInputMeta.class; // for i18n purposes
+  private static Class<?> PKG = SolrInputMeta.class; // for i18n purposes
 
   public static final String FIELD_TYPE_ELEMENT = "Element";
   public static final String FIELD_TYPE_METRIC = "Metric";
@@ -77,17 +77,17 @@ public class OmnitureInputMeta extends BaseStepMeta implements StepMetaInterface
   private String metrics;
   private String segments;
   /** The fields to return... */
-  private OmnitureInputField[] inputFields;
+  private SolrInputField[] inputFields;
   private int nrFields;
 
-  public OmnitureInputMeta() {
+  public SolrInputMeta() {
     super();
   }
   
   /**
    * @return Returns the input fields.
    */
-  public OmnitureInputField[] getInputFields() {
+  public SolrInputField[] getInputFields() {
     return inputFields;
   }
 
@@ -95,7 +95,7 @@ public class OmnitureInputMeta extends BaseStepMeta implements StepMetaInterface
    * @param inputFields
    *          The input fields to set.
    */
-  public void setInputFields( OmnitureInputField[] inputFields ) {
+  public void setInputFields( SolrInputField[] inputFields ) {
     this.inputFields = inputFields;
   }
 
@@ -172,7 +172,7 @@ public class OmnitureInputMeta extends BaseStepMeta implements StepMetaInterface
   }
   
   public void allocate( int nrfields ) {
-    inputFields = new OmnitureInputField[nrfields];
+    inputFields = new SolrInputField[nrfields];
   }
 
   public int getNrFields() {
@@ -199,7 +199,7 @@ public class OmnitureInputMeta extends BaseStepMeta implements StepMetaInterface
 		                		 throws KettleStepException {
 	    r.clear();
 	    for ( int i = 0; i < inputFields.length; i++ ) {
-	      OmnitureInputField field = inputFields[i];
+	      SolrInputField field = inputFields[i];
 	      int type = field.getType();
 	      if ( type == ValueMetaBase.TYPE_NONE ) {
 	        type = ValueMetaBase.TYPE_STRING;
@@ -225,7 +225,7 @@ public class OmnitureInputMeta extends BaseStepMeta implements StepMetaInterface
   }
 
   public Object clone() {
-    OmnitureInputMeta retval = (OmnitureInputMeta) super.clone();
+    SolrInputMeta retval = (SolrInputMeta) super.clone();
 
     int nrFields = inputFields.length;
 
@@ -233,7 +233,7 @@ public class OmnitureInputMeta extends BaseStepMeta implements StepMetaInterface
 
     for ( int i = 0; i < nrFields; i++ ) {
       if ( inputFields[i] != null ) {
-        retval.inputFields[i] = (OmnitureInputField) inputFields[i].clone();
+        retval.inputFields[i] = (SolrInputField) inputFields[i].clone();
       }
     }
 
@@ -254,7 +254,7 @@ public class OmnitureInputMeta extends BaseStepMeta implements StepMetaInterface
     retval.append( "    " ).append( XMLHandler.addTagValue( "segments", segments ) );
     retval.append( "    <fields>" + Const.CR );
     for ( int i = 0; i < inputFields.length; i++ ) {
-      OmnitureInputField field = inputFields[i];
+      SolrInputField field = inputFields[i];
       retval.append( field.getXML() );
     }
     retval.append( "      </fields>" + Const.CR );
@@ -283,7 +283,7 @@ public class OmnitureInputMeta extends BaseStepMeta implements StepMetaInterface
 
 	      for ( int i = 0; i < nrFields; i++ ) {
 	        Node fnode = XMLHandler.getSubNodeByNr( fields, "field", i );
-	        OmnitureInputField field = new OmnitureInputField( fnode );
+	        SolrInputField field = new SolrInputField( fnode );
 	        inputFields[i] = field;
 	      }
 	      
@@ -312,7 +312,7 @@ public class OmnitureInputMeta extends BaseStepMeta implements StepMetaInterface
 	      allocate( nrFields );
 
 	      for ( int i = 0; i < nrFields; i++ ) {
-	        OmnitureInputField field = new OmnitureInputField();
+	        SolrInputField field = new SolrInputField();
 
 	        field.setName( rep.getStepAttributeString( id_step, i, "field_name" ) );
 	        field.setType( ValueMeta.getType( rep.getStepAttributeString( id_step, i, "field_type" ) ) );
@@ -322,13 +322,13 @@ public class OmnitureInputMeta extends BaseStepMeta implements StepMetaInterface
 	        field.setGroupSymbol( rep.getStepAttributeString( id_step, i, "field_group" ) );
 	        field.setLength( (int) rep.getStepAttributeInteger( id_step, i, "field_length" ) );
 	        field.setPrecision( (int) rep.getStepAttributeInteger( id_step, i, "field_precision" ) );
-	        field.setTrimType( OmnitureInputField.getTrimTypeByCode( rep.getStepAttributeString(
+	        field.setTrimType( SolrInputField.getTrimTypeByCode( rep.getStepAttributeString(
 	          id_step, i, "field_trim_type" ) ) );
 	        inputFields[i] = field;
 	      }
 	    } catch ( Exception e ) {
 	      throw new KettleException( BaseMessages.getString(
-	        PKG, "OmnitureInputMeta.Exception.ErrorReadingRepository" ), e );
+	        PKG, "SolrInputMeta.Exception.ErrorReadingRepository" ), e );
 	    }
 	  }
 
@@ -345,7 +345,7 @@ public class OmnitureInputMeta extends BaseStepMeta implements StepMetaInterface
 	      rep.saveStepAttribute( id_transformation, id_step, "segments", segments );
 
 	      for ( int i = 0; i < inputFields.length; i++ ) {
-	        OmnitureInputField field = inputFields[i];
+	        SolrInputField field = inputFields[i];
 	        rep.saveStepAttribute( id_transformation, id_step, i, "field_name", field.getName() );
 	        rep.saveStepAttribute( id_transformation, id_step, i, "field_type", field.getTypeDesc() );
 	        rep.saveStepAttribute( id_transformation, id_step, i, "field_format", field.getFormat() );
@@ -358,7 +358,7 @@ public class OmnitureInputMeta extends BaseStepMeta implements StepMetaInterface
 	      }
 	    } catch ( Exception e ) {
 	      throw new KettleException( BaseMessages.getString(
-	        PKG, "OmnitureInputMeta.Exception.ErrorSavingToRepository", "" + id_step ), e );
+	        PKG, "SolrInputMeta.Exception.ErrorSavingToRepository", "" + id_step ), e );
 	    }
 	  }
 
@@ -371,11 +371,11 @@ public class OmnitureInputMeta extends BaseStepMeta implements StepMetaInterface
 	    if ( input.length > 0 ) {
 	      cr =
 	        new CheckResult( CheckResult.TYPE_RESULT_ERROR, BaseMessages.getString(
-	          PKG, "OmnitureInputMeta.CheckResult.NoInputExpected" ), stepMeta );
+	          PKG, "SolrInputMeta.CheckResult.NoInputExpected" ), stepMeta );
 	    } else {
 	      cr =
 	        new CheckResult( CheckResult.TYPE_RESULT_OK, BaseMessages.getString(
-	          PKG, "OmnitureInputMeta.CheckResult.NoInput" ), stepMeta );
+	          PKG, "SolrInputMeta.CheckResult.NoInput" ), stepMeta );
 	    }
 	    remarks.add( cr );
 
@@ -383,11 +383,11 @@ public class OmnitureInputMeta extends BaseStepMeta implements StepMetaInterface
 	    if ( Const.isEmpty( userName ) ) {
 	      cr =
 	        new CheckResult( CheckResult.TYPE_RESULT_ERROR, BaseMessages.getString(
-	          PKG, "OmnitureInputMeta.CheckResult.NoUsername" ), stepMeta );
+	          PKG, "SolrInputMeta.CheckResult.NoUsername" ), stepMeta );
 	    } else {
 	      cr =
 	        new CheckResult( CheckResult.TYPE_RESULT_OK, BaseMessages.getString(
-	          PKG, "OmnitureInputMeta.CheckResult.UsernameOk" ), stepMeta );
+	          PKG, "SolrInputMeta.CheckResult.UsernameOk" ), stepMeta );
 	    }
 	    remarks.add( cr );
 	    
@@ -395,11 +395,11 @@ public class OmnitureInputMeta extends BaseStepMeta implements StepMetaInterface
 	    if ( Const.isEmpty( secret ) ) {
 	      cr =
 	        new CheckResult( CheckResult.TYPE_RESULT_ERROR, BaseMessages.getString(
-	          PKG, "OmnitureInputMeta.CheckResult.NoSecret" ), stepMeta );
+	          PKG, "SolrInputMeta.CheckResult.NoSecret" ), stepMeta );
 	    } else {
 	      cr =
 	        new CheckResult( CheckResult.TYPE_RESULT_OK, BaseMessages.getString(
-	          PKG, "OmnitureInputMeta.CheckResult.SecretOk" ), stepMeta );
+	          PKG, "SolrInputMeta.CheckResult.SecretOk" ), stepMeta );
 	    }
 	    remarks.add( cr );
 	    
@@ -407,11 +407,11 @@ public class OmnitureInputMeta extends BaseStepMeta implements StepMetaInterface
 	    if ( Const.isEmpty( reportSuiteId ) ) {
 	      cr =
 	        new CheckResult( CheckResult.TYPE_RESULT_ERROR, BaseMessages.getString(
-	          PKG, "OmnitureInputMeta.CheckResult.NoReportSuiteId" ), stepMeta );
+	          PKG, "SolrInputMeta.CheckResult.NoReportSuiteId" ), stepMeta );
 	    } else {
 	      cr =
 	        new CheckResult( CheckResult.TYPE_RESULT_OK, BaseMessages.getString(
-	          PKG, "OmnitureInputMeta.CheckResult.ReportSuiteIdOk" ), stepMeta );
+	          PKG, "SolrInputMeta.CheckResult.ReportSuiteIdOk" ), stepMeta );
 	    }
 	    remarks.add( cr );
 
@@ -419,22 +419,22 @@ public class OmnitureInputMeta extends BaseStepMeta implements StepMetaInterface
 	    if ( inputFields.length == 0 ) {
 	      cr =
 	        new CheckResult( CheckResult.TYPE_RESULT_ERROR, BaseMessages.getString(
-	          PKG, "OmnitureInputMeta.CheckResult.NoFields" ), stepMeta );
+	          PKG, "SolrInputMeta.CheckResult.NoFields" ), stepMeta );
 	    } else {
 	      cr =
 	        new CheckResult( CheckResult.TYPE_RESULT_OK, BaseMessages.getString(
-	          PKG, "OmnitureInputMeta.CheckResult.FieldsOk" ), stepMeta );
+	          PKG, "SolrInputMeta.CheckResult.FieldsOk" ), stepMeta );
 	    }
 	    remarks.add( cr );
 	  }
 
 	  public StepInterface getStep( StepMeta stepMeta, StepDataInterface stepDataInterface, int cnr,
 	    TransMeta transMeta, Trans trans ) {
-	    return new OmnitureInput( stepMeta, stepDataInterface, cnr, transMeta, trans );
+	    return new SolrInput( stepMeta, stepDataInterface, cnr, transMeta, trans );
 	  }
 
 	  public StepDataInterface getStepData() {
-	    return new OmnitureInputData();
+	    return new SolrInputData();
 	  }
 	  
 }
