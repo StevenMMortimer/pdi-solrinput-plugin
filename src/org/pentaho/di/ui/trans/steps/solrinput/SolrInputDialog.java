@@ -816,7 +816,6 @@ public String open() {
 	          rsp = solr.query(query);
 	        } catch (SolrServerException e) {
 	          e.printStackTrace();
-	          //return;
 	        }
 	        if(facetRequested){
 	        	headerNames.add(rsp.getFacetFields().get(0).getName()); 
