@@ -60,9 +60,10 @@ public class SolrInputMeta extends BaseStepMeta implements StepMetaInterface {
   
   private String URL;
   private String q;
+  private String sort;
+  private String cursor;
   private String fl;
   private String fq;
-  private String rows;
   private String facetField;
   private String facetQuery;
   
@@ -105,6 +106,22 @@ public class SolrInputMeta extends BaseStepMeta implements StepMetaInterface {
     this.q = q;
   }
   
+  public String getSort() {
+	return sort;
+  }
+
+  public void setSort( String sort ) {
+    this.sort = sort;
+  }
+  
+  public String getCursor() {
+	return cursor;
+  }
+
+  public void setCursor( String cursor ) {
+    this.cursor = cursor;
+  }
+  
   public String getFq() {
 	return fq;
   }
@@ -119,14 +136,6 @@ public class SolrInputMeta extends BaseStepMeta implements StepMetaInterface {
 
   public void setFl( String fl ) {
     this.fl = fl;
-  }
-  
-  public String getRows() {
-	return rows;
-  }
-
-  public void setRows( String rows ) {
-    this.rows = rows;
   }
   
   public String getFacetField() {
@@ -157,9 +166,10 @@ public class SolrInputMeta extends BaseStepMeta implements StepMetaInterface {
   public void setDefault() {
     URL = "";
     q = "";
+    sort = "";
+    cursor = "No";
     fl = "";
     fq = "";
-    rows = "";
     facetField = "";
     facetQuery = "";
     allocate( 0 );
@@ -217,9 +227,10 @@ public class SolrInputMeta extends BaseStepMeta implements StepMetaInterface {
     StringBuilder retval = new StringBuilder( 800 );
     retval.append( "    " ).append( XMLHandler.addTagValue( "URL", URL ) );
     retval.append( "    " ).append( XMLHandler.addTagValue( "q", q ) );
+    retval.append( "    " ).append( XMLHandler.addTagValue( "sort", sort ) );
+    retval.append( "    " ).append( XMLHandler.addTagValue( "cursor", cursor ) );
     retval.append( "    " ).append( XMLHandler.addTagValue( "fq", fq ) );
     retval.append( "    " ).append( XMLHandler.addTagValue( "fl", fl ) );
-    retval.append( "    " ).append( XMLHandler.addTagValue( "rows", rows ) );
     retval.append( "    " ).append( XMLHandler.addTagValue( "facetField", facetField ) );
     retval.append( "    " ).append( XMLHandler.addTagValue( "facetQuery", facetQuery ) );
     retval.append( "    <fields>" + Const.CR );
@@ -235,9 +246,10 @@ public class SolrInputMeta extends BaseStepMeta implements StepMetaInterface {
 	    try {
 	      URL = XMLHandler.getTagValue( stepnode, "URL" );
 	      q = XMLHandler.getTagValue( stepnode, "q" );
+	      sort = XMLHandler.getTagValue( stepnode, "sort" );
+	      cursor = XMLHandler.getTagValue( stepnode, "cursor" );
 	      fq = XMLHandler.getTagValue( stepnode, "fq" );
 	      fl = XMLHandler.getTagValue( stepnode, "fl" );
-	      rows = XMLHandler.getTagValue( stepnode, "rows" );
 	      facetField = XMLHandler.getTagValue( stepnode, "facetField" );
 	      facetQuery = XMLHandler.getTagValue( stepnode, "facetQuery" );
 
@@ -261,9 +273,10 @@ public class SolrInputMeta extends BaseStepMeta implements StepMetaInterface {
 	    try {
 	      URL = rep.getStepAttributeString( id_step, "URL" );
 	      q = rep.getStepAttributeString( id_step, "q" );
+	      sort = rep.getStepAttributeString( id_step, "sort" );
+	      cursor = rep.getStepAttributeString( id_step, "cursor" );
 	      fq = rep.getStepAttributeString( id_step, "fq" );
 	      fl = rep.getStepAttributeString( id_step, "fl" );
-	      rows = rep.getStepAttributeString( id_step,  "rows" );
 	      facetField = rep.getStepAttributeString( id_step, "facetField" );
 	      facetQuery = rep.getStepAttributeString( id_step, "facetQuery" );
 
@@ -296,9 +309,10 @@ public class SolrInputMeta extends BaseStepMeta implements StepMetaInterface {
 	    try {
 	      rep.saveStepAttribute( id_transformation, id_step, "URL", URL );
 	      rep.saveStepAttribute( id_transformation, id_step, "q", q );
+	      rep.saveStepAttribute( id_transformation, id_step, "sort", sort );
+	      rep.saveStepAttribute( id_transformation, id_step, "cursor", cursor );
 	      rep.saveStepAttribute( id_transformation, id_step, "fq", fq );
 	      rep.saveStepAttribute( id_transformation, id_step, "fl", fl );
-	      rep.saveStepAttribute( id_transformation, id_step, "rows", rows );
 	      rep.saveStepAttribute( id_transformation, id_step, "facetField", facetField );
 	      rep.saveStepAttribute( id_transformation, id_step, "facetQuery", facetQuery );
 	      

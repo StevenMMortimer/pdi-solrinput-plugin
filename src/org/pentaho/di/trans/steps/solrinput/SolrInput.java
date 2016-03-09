@@ -22,9 +22,7 @@
 
 package org.pentaho.di.trans.steps.solrinput;
 
-import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 
 import org.pentaho.di.core.Const;
@@ -47,6 +45,7 @@ import org.pentaho.di.trans.steps.solrinput.SolrInputMeta;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
+import org.apache.solr.client.solrj.response.FacetField;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
@@ -124,16 +123,32 @@ public class SolrInput extends BaseStep implements StepInterface {
 		      data.convertRowMeta = data.outputRowMeta.cloneToType( ValueMetaInterface.TYPE_STRING );
 		      
 		      // get real values
+		      boolean tryCursor = true;
+		      Integer startRecord = 0;
+		      Integer chunkRowSize = 20;
+		      String realURL = meta.getURL();
 		      String realQ = meta.getQ();
-		      String realFl = meta.getFl();
+		      String realSort = meta.getSort();
+		      String realCursor = meta.getCursor();
 		      String realFq = meta.getFq();
-		      String realRows = meta.getRows();
-		      String realFacetField = meta.getFacetField();
+		      String realFl = meta.getFl();
 		      String realFacetQuery = meta.getFacetQuery();
+		      String realFacetField = meta.getFacetField();
 			  /* Send and Get the report */
 		      SolrQuery query = new SolrQuery();
+		      query.set("rows", chunkRowSize);
 		      if ( realQ != null && !realQ.equals("") ){
 		    	  query.set("q", realQ);
+		      }
+		      if ( realSort != null && !realSort.equals("") ){
+		    	  query.set("sort", realSort);
+		      } else {
+		    	  tryCursor = false;
+		      }
+		      if ( realCursor != null && !realCursor.equals("") ){
+		    	  if( realCursor.equals("No") ){
+		    		  tryCursor = false;
+		    	  }
 		      }
 		      if ( realFl != null && !realFl.equals("") ){
 		    	  query.set("fl", realFl);
@@ -141,32 +156,64 @@ public class SolrInput extends BaseStep implements StepInterface {
 		      if ( realFq != null && !realFq.equals("") ){
 		    	  query.set("fq", realFq);
 		      }
-		      query.set("rows", 20);
-		      query.setSort(SolrQuery.SortClause.desc("propid"));
+		      if ( realFacetField != null && !realFacetField.equals("")){
+		    	  //TODO incorporate multiple facet fields at once
+		    	  //String[] facetFields = realFacetField.split("\\s*,\\s*");
+		    	  //for(int i =0; i < facetFields.length; i++){
+		    	  query.addFacetField(realFacetField);  
+		    	  //}
+	    		  query.setFacet(true);
+	    		  query.setFacetLimit(-1);
+	    		  query.setFacetMinCount(0);
+	    		  query.setFacetSort("count");
+	    		  query.set("rows", 0);
+	    		  tryCursor = false;
+	    		  data.facetRequested = true;
+		      }
+		      if ( realFacetQuery != null && !realFacetQuery.equals("")){
+		    	  query.addFacetQuery(realFacetQuery);
+		      }
 		      // You can't use "TimeAllowed" with "CursorMark"
 		      // The documentation says "Values <= 0 mean 
 		      // no time restriction", so setting to 0.
 		      query.setTimeAllowed(0);
+		      HttpSolrServer solr = new HttpSolrServer(realURL);
 		      String cursorMark = CursorMarkParams.CURSOR_MARK_START;
 		      boolean done = false;
 		      QueryResponse rsp = null;
 		      while (!done) {
-		    	query.set(CursorMarkParams.CURSOR_MARK_PARAM, cursorMark);
+		    	  if(tryCursor){
+	    		  	query.set(CursorMarkParams.CURSOR_MARK_PARAM, cursorMark);
+		    	  } else {
+		    		query.setStart(startRecord);
+		    	  }
 		        try {
-		          rsp = data.solr.query(query);
+		          rsp = solr.query(query);
 		        } catch (SolrServerException e) {
 		          e.printStackTrace();
-
-		        }	        
-		        SolrDocumentList theseDocs = rsp.getResults();
-		        for(SolrDocument doc : theseDocs) {
-		        	data.list.add(doc);
 		        }
-		        String nextCursorMark = rsp.getNextCursorMark();
-		        if (cursorMark.equals(nextCursorMark)) {
-		          done = true;
+		        if(data.facetRequested){
+		        	data.facetCountName = rsp.getFacetFields().get(0).getName();
+		        	data.facetCounts = rsp.getFacetFields().get(0).getValues();
+		        	done = true;
 		        } else {
-		          cursorMark = nextCursorMark;
+			        SolrDocumentList theseDocs = rsp.getResults();
+			        for(SolrDocument doc : theseDocs) {
+			        	data.documentList.add(doc);
+			        }
+		        }
+		        if(tryCursor){
+			        String nextCursorMark = rsp.getNextCursorMark();
+			        if (cursorMark.equals(nextCursorMark)) {
+			          done = true;
+			        } else {
+			          cursorMark = nextCursorMark;
+			        }
+		        } else {
+			        startRecord = startRecord + chunkRowSize;
+			        if(startRecord >= rsp.getResults().getNumFound()){
+			        	done = true;
+			        }
 		        }
 		      }
 		    }
@@ -174,13 +221,23 @@ public class SolrInput extends BaseStep implements StepInterface {
 		    Object[] outputRowData = null;
 		    
 		    try {
-		        // get one row if we can
-		        if ( data.list.size()-1 < data.recordIndex ) {
-			          setOutputDone();
-			          return false;
-			    }
-		    	SolrDocument record = data.list.get(data.recordIndex);
-		    	outputRowData = prepareRecord(record);
+		        if (data.facetRequested){
+			        // get one row if we can
+			        if ( data.facetCounts.size()-1 < data.recordIndex ) {
+				          setOutputDone();
+				          return false;
+				    }
+		        	FacetField.Count facetRecord = data.facetCounts.get(data.recordIndex);
+			    	outputRowData = prepareFacetRecord(facetRecord);
+		        } else {
+			        // get one row if we can
+			        if ( data.documentList.size()-1 < data.recordIndex ) {
+				          setOutputDone();
+				          return false;
+				    }
+			    	SolrDocument record = data.documentList.get(data.recordIndex);
+			    	outputRowData = prepareRecord(record);
+		        }
 		        putRow( data.outputRowMeta, outputRowData ); // copy row to output rowset(s);
 		        data.recordIndex++;
 		        return true;
@@ -243,6 +300,46 @@ public class SolrInput extends BaseStep implements StepInterface {
 		    }
 		    return outputRowData;
 		  }
+		  
+		  private Object[] prepareFacetRecord(FacetField.Count facetRecord) throws KettleException {
+			    // Build an empty row based on the meta-data
+			    Object[] outputRowData = buildEmptyRow();
+			    try {
+			      for ( int i = 0; i < data.nrfields; i++ ) {
+			    	  String value = "";
+			    	  if(meta.getInputFields()[i].getName().equals(data.facetCountName)){
+			    		  value = facetRecord.getName();
+			    	  }
+			    	  if(meta.getInputFields()[i].getName().equals("count")){
+			    		  value = Long.toString(facetRecord.getCount());
+			    	  }
+			        switch ( meta.getInputFields()[i].getTrimType() ) {
+			          case SolrInputField.TYPE_TRIM_LEFT:
+			            value = Const.ltrim( value );
+			            break;
+			          case SolrInputField.TYPE_TRIM_RIGHT:
+			            value = Const.rtrim( value );
+			            break;
+			          case SolrInputField.TYPE_TRIM_BOTH:
+			            value = Const.trim( value );
+			            break;
+			          default:
+			            break;
+			        }
+			        // do conversions
+			        ValueMetaInterface targetValueMeta = data.outputRowMeta.getValueMeta( i );
+			        ValueMetaInterface sourceValueMeta = data.convertRowMeta.getValueMeta( i );
+			        outputRowData[i] = targetValueMeta.convertData( sourceValueMeta, value );
+			      } // End of loop over fields...
+			      RowMetaInterface irow = getInputRowMeta();
+			      data.previousRow = irow == null ? outputRowData : irow.cloneRow( outputRowData ); // copy it to make
+			    } catch ( Exception e ) {
+			      throw new KettleException( BaseMessages
+			        .getString( PKG, "SolrInput.Exception.CanNotParseFromSolr" ), e );
+			    }
+			    return outputRowData;
+			  }
+
 	
 	  /**
 	   * Build an empty row based on the meta-data.

@@ -26,7 +26,11 @@ import org.pentaho.di.core.row.RowMetaInterface;
 import org.pentaho.di.trans.step.BaseStepData;
 import org.pentaho.di.trans.step.StepDataInterface;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
+import org.apache.solr.client.solrj.response.FacetField;
 import org.apache.solr.common.SolrDocumentList;
 
 /**
@@ -55,15 +59,21 @@ public class SolrInputData extends BaseStepData implements StepDataInterface {
 	public RowMetaInterface convertRowMeta;
 	public int nrfields;
 	public int recordIndex;
+	public boolean facetRequested;
+	public String facetCountName;
 	public Object previousRow;
 	public HttpSolrServer solr;
-	public SolrDocumentList list;
+	public SolrDocumentList documentList;
+	public List<FacetField.Count> facetCounts;
 	
     public SolrInputData()
 	{
 		super();
 		recordIndex = 0;
-		list = new SolrDocumentList();
+		facetCountName = "";
+		facetRequested = false;
+		documentList = new SolrDocumentList();
+		facetCounts = new ArrayList<FacetField.Count>();
 	}
 }
 	

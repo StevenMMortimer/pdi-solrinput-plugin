@@ -45,7 +45,6 @@ import org.eclipse.swt.graphics.Cursor;
 import org.eclipse.swt.custom.CTabFolder;
 import org.eclipse.swt.custom.CTabItem;
 import org.eclipse.swt.custom.CCombo;
-import org.eclipse.swt.events.FocusListener;
 import org.eclipse.swt.events.ModifyEvent;
 import org.eclipse.swt.events.ModifyListener;
 import org.eclipse.swt.events.SelectionAdapter;
@@ -69,7 +68,6 @@ import org.eclipse.swt.widgets.TableItem;
 import org.eclipse.swt.widgets.Text;
 import org.pentaho.di.ui.core.widget.ColumnInfo;
 import org.pentaho.di.ui.core.dialog.ErrorDialog;
-import org.pentaho.di.ui.core.widget.ComboVar;
 import org.pentaho.di.core.Const;
 import org.pentaho.di.core.Props;
 import org.pentaho.di.core.exception.KettleException;
@@ -106,10 +104,12 @@ public class SolrInputDialog extends BaseStepDialog implements StepDialogInterfa
   
   private LabelTextVar wURL;
   private FormData fdURL;
-  private Label wlQ, wlFq, wlFl, wlRows, wlFacetField, wlFacetQuery;
-  private TextVar wQ, wFq, wFl, wRows, wFacetField, wFacetQuery;
+  private Label wlQ, wlSort, wlFq, wlFl, wlFacetField, wlFacetQuery;
+  private TextVar wQ, wSort, wFq, wFl, wFacetField, wFacetQuery;
+  private Label wlCursor;
+  private CCombo wQuCursor;
   
-  private Link wQReference, wFqReference, wFlReference, wRowsReference, wFacetFieldReference, wFacetQueryReference;
+  private Link wQReference, wSortReference, wFqReference, wFlReference, wFacetFieldReference, wFacetQueryReference;
   
   private Button wTest;
   private FormData fdTest;
@@ -123,18 +123,20 @@ public class SolrInputDialog extends BaseStepDialog implements StepDialogInterfa
 
   private ModifyListener lsMod;
   
+  public static final String[] cursorYN = { "No", "Yes" };
+
   static final String REFERENCE_Q_URI =
-    "https://marketing.adobe.com/developer/documentation/analytics-reporting-1-4/metrics";
+    "https://wiki.apache.org/solr/CommonQueryParameters#q";
+  static final String REFERENCE_SORT_URI =
+	"https://wiki.apache.org/solr/CommonQueryParameters#sort";
   static final String REFERENCE_FQ_URI =
-    "https://marketing.adobe.com/developer/documentation/analytics-reporting-1-4/elements";
+    "https://wiki.apache.org/solr/CommonQueryParameters#fq";
   static final String REFERENCE_FL_URI =
-    "https://marketing.adobe.com/resources/help/en_US/analytics/segment";
-  static final String REFERENCE_ROWS_URI =
-    "https://marketing.adobe.com/developer/documentation/analytics-reporting-1-4/elements";
+    "https://wiki.apache.org/solr/CommonQueryParameters#fl";
   static final String REFERENCE_FACETFIELD_URI =
-    "https://marketing.adobe.com/resources/help/en_US/analytics/segment";
+    "https://wiki.apache.org/solr/SimpleFacetParameters#facet.field";
   static final String REFERENCE_FACETQUERY_URI =
-    "https://marketing.adobe.com/developer/documentation/analytics-reporting-1-4/elements";
+    "https://wiki.apache.org/solr/SimpleFacetParameters#facet.query_:_Arbitrary_Query_Faceting";
   
   // constructor
   public SolrInputDialog( Shell parent, Object in, TransMeta transMeta, String sname ) {
@@ -308,12 +310,66 @@ public String open() {
     fdQuQReference.right = new FormAttachment( 100, 0 );
     wQReference.setLayoutData( fdQuQReference );
     
+    // sort line
+    wlSort = new Label( wQueryGroup, SWT.RIGHT );
+    wlSort.setText( BaseMessages.getString( PKG, "SolrInputDialog.Query.Sort.Label" ) );
+    props.setLook( wlSort );
+    FormData fdlQuSort = new FormData();
+    fdlQuSort.top = new FormAttachment( wQ, 2 * margin );
+    fdlQuSort.left = new FormAttachment( 0, 0 );
+    fdlQuSort.right = new FormAttachment( middle, -margin );
+    wlSort.setLayoutData( fdlQuSort );
+    
+    wSort = new TextVar( transMeta, wQueryGroup, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
+    wSort.addModifyListener( lsMod );
+    wSort.setToolTipText( BaseMessages.getString( PKG, "SolrInputDialog.Query.Sort.Tooltip" ) );
+    props.setLook( wSort );
+    wSortReference = new Link( wQueryGroup, SWT.SINGLE );
+    wSortReference.setText( BaseMessages.getString( PKG, "SolrInputDialog.Query.Reference.Label" ) );
+    props.setLook( wSortReference );
+    wSortReference.addListener( SWT.Selection, new Listener() {
+      @Override
+      public void handleEvent( Event ev ) {
+        BareBonesBrowserLaunch.openURL( REFERENCE_SORT_URI );
+      }
+    } );
+    wSortReference.pack( true );
+    FormData fdQuSort = new FormData();
+    fdQuSort.top = new FormAttachment( wQ, 2 * margin );
+    fdQuSort.left = new FormAttachment( middle, 0 );
+    fdQuSort.right = new FormAttachment( 100, -wSortReference.getBounds().width - margin );
+    wSort.setLayoutData( fdQuSort );
+    FormData fdQuSortReference = new FormData();
+    fdQuSortReference.top = new FormAttachment( wQ, 2 * margin );
+    fdQuSortReference.left = new FormAttachment( wSort, 0 );
+    fdQuSortReference.right = new FormAttachment( 100, 0 );
+    wSortReference.setLayoutData( fdQuSortReference );
+    
+    // option for cursor paging
+    wlCursor = new Label( wQueryGroup, SWT.RIGHT );
+    wlCursor.setText( BaseMessages.getString( PKG, "SolrInputDialog.Query.Cursor.Label" ) );
+    props.setLook( wlCursor );
+    FormData fdlCursor = new FormData();
+    fdlCursor.top = new FormAttachment( wSort, margin );
+    fdlCursor.left = new FormAttachment( 0, 0 );
+    fdlCursor.right = new FormAttachment( middle, -margin );
+    wlCursor.setLayoutData( fdlCursor );
+    wQuCursor = new CCombo( wQueryGroup, SWT.BORDER | SWT.READ_ONLY );
+    props.setLook( wQuCursor );
+    wQuCursor.addModifyListener( lsMod );
+    FormData fdCursor = new FormData();
+    fdCursor.top = new FormAttachment( wSort, margin );
+    fdCursor.left = new FormAttachment( middle, 0 );
+    fdCursor.right = new FormAttachment( 100, 0 );
+    wQuCursor.setLayoutData( fdCursor );
+    wQuCursor.setItems( cursorYN );
+    
     // fq 
     wlFq = new Label( wQueryGroup, SWT.RIGHT );
     wlFq.setText( BaseMessages.getString( PKG, "SolrInputDialog.Query.Fq.Label" ) );
     props.setLook( wlFq );
     FormData fdlQuFq = new FormData();
-    fdlQuFq.top = new FormAttachment( wQ, margin );
+    fdlQuFq.top = new FormAttachment( wQuCursor, margin );
     fdlQuFq.left = new FormAttachment( 0, 0 );
     fdlQuFq.right = new FormAttachment( middle, -margin );
     wlFq.setLayoutData( fdlQuFq );
@@ -332,12 +388,12 @@ public String open() {
     } );
     wFqReference.pack( true );
     FormData fdQuFq = new FormData();
-    fdQuFq.top = new FormAttachment( wQ, margin );
+    fdQuFq.top = new FormAttachment( wQuCursor, margin );
     fdQuFq.left = new FormAttachment( middle, 0 );
     fdQuFq.right = new FormAttachment( 100, -wFqReference.getBounds().width - margin );
     wFq.setLayoutData( fdQuFq );
     FormData fdQuFqReference = new FormData();
-    fdQuFqReference.top = new FormAttachment( wQ, margin );
+    fdQuFqReference.top = new FormAttachment( wQuCursor, margin );
     fdQuFqReference.left = new FormAttachment( wFq, 0 );
     fdQuFqReference.right = new FormAttachment( 100, 0 );
     wFqReference.setLayoutData( fdQuFqReference );
@@ -376,46 +432,12 @@ public String open() {
     fdQuFlReference.right = new FormAttachment( 100, 0 );
     wFlReference.setLayoutData( fdQuFlReference );
     
-    // rows
-    wlRows = new Label( wQueryGroup, SWT.RIGHT );
-    wlRows.setText( BaseMessages.getString( PKG, "SolrInputDialog.Query.Rows.Label" ) );
-    props.setLook( wlRows );
-    FormData fdlQuRows = new FormData();
-    fdlQuRows.top = new FormAttachment( wFl, margin );
-    fdlQuRows.left = new FormAttachment( 0, 0 );
-    fdlQuRows.right = new FormAttachment( middle, -margin );
-    wlRows.setLayoutData( fdlQuRows );
-    wRows = new TextVar( transMeta, wQueryGroup, SWT.SINGLE | SWT.LEFT | SWT.BORDER );
-    wRows.addModifyListener( lsMod );
-    wRows.setToolTipText( BaseMessages.getString( PKG, "SolrInputDialog.Query.Rows.Tooltip" ) );
-    props.setLook( wRows );
-    wRowsReference = new Link( wQueryGroup, SWT.SINGLE );
-    wRowsReference.setText( BaseMessages.getString( PKG, "SolrInputDialog.Query.Reference.Label" ) );
-    props.setLook( wRowsReference );
-    wRowsReference.addListener( SWT.Selection, new Listener() {
-      @Override
-      public void handleEvent( Event ev ) {
-        BareBonesBrowserLaunch.openURL( REFERENCE_ROWS_URI );
-      }
-    } );
-    wRowsReference.pack( true );
-    FormData fdQuRows = new FormData();
-    fdQuRows.top = new FormAttachment( wFl, margin );
-    fdQuRows.left = new FormAttachment( middle, 0 );
-    fdQuRows.right = new FormAttachment( 100, -wRowsReference.getBounds().width - margin );
-    wRows.setLayoutData( fdQuRows );
-    FormData fdQuRowsReference = new FormData();
-    fdQuRowsReference.top = new FormAttachment( wFl, margin );
-    fdQuRowsReference.left = new FormAttachment( wRows, 0 );
-    fdQuRowsReference.right = new FormAttachment( 100, 0 );
-    wRowsReference.setLayoutData( fdQuRowsReference );
-    
     // facetField
     wlFacetField = new Label( wQueryGroup, SWT.RIGHT );
     wlFacetField.setText( BaseMessages.getString( PKG, "SolrInputDialog.Query.FacetField.Label" ) );
     props.setLook( wlFacetField );
     FormData fdlQuFacetField = new FormData();
-    fdlQuFacetField.top = new FormAttachment( wRows, margin );
+    fdlQuFacetField.top = new FormAttachment( wFl, margin );
     fdlQuFacetField.left = new FormAttachment( 0, 0 );
     fdlQuFacetField.right = new FormAttachment( middle, -margin );
     wlFacetField.setLayoutData( fdlQuFacetField );
@@ -434,12 +456,12 @@ public String open() {
     } );
     wFacetFieldReference.pack( true );
     FormData fdQuFacetField = new FormData();
-    fdQuFacetField.top = new FormAttachment( wRows, margin );
+    fdQuFacetField.top = new FormAttachment( wFl, margin );
     fdQuFacetField.left = new FormAttachment( middle, 0 );
     fdQuFacetField.right = new FormAttachment( 100, -wFacetFieldReference.getBounds().width - margin );
     wFacetField.setLayoutData( fdQuFacetField );
     FormData fdQuFacetFieldReference = new FormData();
-    fdQuFacetFieldReference.top = new FormAttachment( wRows, margin );
+    fdQuFacetFieldReference.top = new FormAttachment( wFl, margin );
     fdQuFacetFieldReference.left = new FormAttachment( wFacetField, 0 );
     fdQuFacetFieldReference.right = new FormAttachment( 100, 0 );
     wFacetFieldReference.setLayoutData( fdQuFacetFieldReference );
@@ -640,9 +662,9 @@ public String open() {
     };
     wStepname.addSelectionListener( lsDef );
     wQ.addSelectionListener( lsDef );
+    wSort.addSelectionListener( lsDef );
     wFq.addSelectionListener( lsDef );
     wFl.addSelectionListener( lsDef );
-    wRows.addSelectionListener( lsDef );
     wFacetField.addSelectionListener( lsDef );
     wFacetQuery.addSelectionListener( lsDef );
 
@@ -724,17 +746,33 @@ public String open() {
 	      // clear the current fields grid
 	      wFields.removeAll();
 	      // get real values
+	      boolean tryCursor = true;
+	      boolean facetRequested = false;
+	      Integer startRecord = 0;
+	      Integer chunkRowSize = 20;
 	      String realURL = transMeta.environmentSubstitute( meta.getURL() );
 	      String realQ = transMeta.environmentSubstitute( meta.getQ() );
+	      String realSort = transMeta.environmentSubstitute( meta.getSort() );
+	      String realCursor = transMeta.environmentSubstitute( meta.getCursor() );
 	      String realFq = transMeta.environmentSubstitute( meta.getFq() );
 	      String realFl = transMeta.environmentSubstitute( meta.getFl() );
-	      String realRows = transMeta.environmentSubstitute( meta.getRows() );
 	      String realFacetQuery = transMeta.environmentSubstitute( meta.getFacetQuery() );
 	      String realFacetField = transMeta.environmentSubstitute( meta.getFacetField() );
 		  /* Send and Get the report */
 	      SolrQuery query = new SolrQuery();
+	      query.set("rows", chunkRowSize);
 	      if ( realQ != null && !realQ.equals("") ){
 	    	  query.set("q", realQ);
+	      }
+	      if ( realSort != null && !realSort.equals("") ){
+	    	  query.set("sort", realSort);
+	      } else {
+	    	  tryCursor = false;
+	      }
+	      if ( realCursor != null && !realCursor.equals("") ){
+	    	  if( realCursor.equals("No") ){
+	    		  tryCursor = false;
+	    	  }
 	      }
 	      if ( realFl != null && !realFl.equals("") ){
 	    	  query.set("fl", realFl);
@@ -742,8 +780,23 @@ public String open() {
 	      if ( realFq != null && !realFq.equals("") ){
 	    	  query.set("fq", realFq);
 	      }
-	      query.set("rows", 20);
-	      query.setSort(SolrQuery.SortClause.desc("propid"));
+	      if ( realFacetField != null && !realFacetField.equals("")){
+	    	  //TODO incorporate multiple facet fields at once
+	    	  //String[] facetFields = realFacetField.split("\\s*,\\s*");
+	    	  //for(int i =0; i < facetFields.length; i++){
+	    	  query.addFacetField(realFacetField);  
+	    	  //}
+    		  query.setFacet(true);
+    		  query.setFacetLimit(-1);
+    		  query.setFacetMinCount(0);
+    		  query.setFacetSort("count");
+    		  query.set("rows", 0);
+    		  tryCursor = false;
+    		  facetRequested = true;
+	      }
+	      if ( realFacetQuery != null && !realFacetQuery.equals("")){
+	    	  query.addFacetQuery(realFacetQuery);
+	      }
 	      // You can't use "TimeAllowed" with "CursorMark"
 	      // The documentation says "Values <= 0 mean 
 	      // no time restriction", so setting to 0.
@@ -754,28 +807,45 @@ public String open() {
 	      List<String> headerNames = new ArrayList<String>();
 	      QueryResponse rsp = null;
 	      while (!done) {
-	    	query.set(CursorMarkParams.CURSOR_MARK_PARAM, cursorMark);
+	    	  if(tryCursor){
+    		  	query.set(CursorMarkParams.CURSOR_MARK_PARAM, cursorMark);
+	    	  } else {
+	    		query.setStart(startRecord);
+	    	  }
 	        try {
 	          rsp = solr.query(query);
 	        } catch (SolrServerException e) {
 	          e.printStackTrace();
-	          return;
+	          //return;
 	        }
-	        SolrDocumentList docs = rsp.getResults();
-	        for(SolrDocument doc : docs) {
-		   	    Collection<String> thisNamesArray = doc.getFieldNames();
-	    	    String[] a = thisNamesArray.toArray(new String[thisNamesArray.size()]);
-			    for (int j=0; j < a.length; j++){
-			         if(!headerNames.contains(a[j])){
-			        	 headerNames.add(a[j]);                           
-			         }
-			    }
-	        }
-	        String nextCursorMark = rsp.getNextCursorMark();
-	        if (cursorMark.equals(nextCursorMark)) {
-	          done = true;
+	        if(facetRequested){
+	        	headerNames.add(rsp.getFacetFields().get(0).getName()); 
+	        	headerNames.add("count"); 
+	        	done = true;
 	        } else {
-	          cursorMark = nextCursorMark;
+		        SolrDocumentList docs = rsp.getResults();
+		        for(SolrDocument doc : docs) {
+			   	    Collection<String> thisNamesArray = doc.getFieldNames();
+		    	    String[] a = thisNamesArray.toArray(new String[thisNamesArray.size()]);
+				    for (int j=0; j < a.length; j++){
+				         if(!headerNames.contains(a[j])){
+				        	 headerNames.add(a[j]);                           
+				         }
+				    }
+		        }
+	        }
+	        if(tryCursor){
+		        String nextCursorMark = rsp.getNextCursorMark();
+		        if (cursorMark.equals(nextCursorMark)) {
+		          done = true;
+		        } else {
+		          cursorMark = nextCursorMark;
+		        }
+	        } else {
+		        startRecord = startRecord + chunkRowSize;
+		        if(startRecord >= rsp.getResults().getNumFound()){
+		        	done = true;
+		        }
 	        }
 	      }
 	      getTableView().table.setItemCount( headerNames.size() );
@@ -850,9 +920,10 @@ private void getInfo( SolrInputMeta in ) {
     
     in.setURL( wURL.getText() );
     in.setQ( wQ.getText() );
+    in.setSort( wSort.getText() );
+    in.setCursor( wQuCursor.getText() );
     in.setFq( wFq.getText() );
     in.setFl( wFl.getText() );
-    in.setRows( wRows.getText() );
     in.setFacetQuery( wFacetQuery.getText() );
     in.setFacetField( wFacetField.getText() );
 
@@ -887,9 +958,10 @@ private void getInfo( SolrInputMeta in ) {
 	  
     wURL.setText( Const.NVL( in.getURL(), "" ) );
     wQ.setText( Const.NVL( in.getQ(), "" ) );
+    wSort.setText( Const.NVL( in.getSort(), "" ) );
+    wQuCursor.setText( Const.NVL( in.getCursor(), "" ) );
     wFq.setText( Const.NVL( in.getFq(), "" ) );
     wFl.setText( Const.NVL( in.getFl(), "" ) );
-    wRows.setText( Const.NVL( in.getRows(), "" ) );
     wFacetField.setText( Const.NVL( in.getFacetField(), "" ) );
     wFacetQuery.setText( Const.NVL( in.getFacetQuery(), "" ) );
     if ( log.isDebug() ) {

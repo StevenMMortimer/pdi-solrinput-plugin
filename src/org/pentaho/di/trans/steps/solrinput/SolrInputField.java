@@ -47,10 +47,10 @@ public class SolrInputField implements Cloneable {
   public static final String[] trimTypeCode = { "none", "left", "right", "both" };
 
   public static final String[] trimTypeDesc = {
-    BaseMessages.getString( PKG, "OmnitureStepField.TrimType.None" ),
-    BaseMessages.getString( PKG, "OmnitureStepField.TrimType.Left" ),
-    BaseMessages.getString( PKG, "OmnitureStepField.TrimType.Right" ),
-    BaseMessages.getString( PKG, "OmnitureStepField.TrimType.Both" ) };
+    BaseMessages.getString( PKG, "SolrStepField.TrimType.None" ),
+    BaseMessages.getString( PKG, "SolrStepField.TrimType.Left" ),
+    BaseMessages.getString( PKG, "SolrStepField.TrimType.Right" ),
+    BaseMessages.getString( PKG, "SolrStepField.TrimType.Both" ) };
 
   private String name;
   private int type;
