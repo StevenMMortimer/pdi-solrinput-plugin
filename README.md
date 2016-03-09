@@ -12,8 +12,9 @@ A Kettle Plugin for Apache Solr Input
 
 The final folder structure should be:
 
+```
 +-- pdi/data-integrations/plugins/pdi-solrinput-plugin
 |   +-- pdi-solrinput-plugin.jar
 |   +-- lib
-|       +-- ..All .jar files in /lib folder
-
+|       +-- ...All .jar files in /lib folder
+```
